@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sanitize-sweep.sh — the pre-push leak guard for this PUBLIC repo.
+# sanitize-sweep.sh: the pre-push leak guard for this PUBLIC repo.
 #
 # Greps every tracked file (and the commit message you pass as $1, if any)
 # for identifier *classes*: private address ranges, Tailscale CGAT, tailnet
@@ -19,7 +19,7 @@ set -u
 cd "$(git rev-parse --show-toplevel)"
 
 PATTERNS=(
-  # private address blocks (RFC1918) — any of these in a public repo is a leak
+  # private address blocks (RFC1918): any of these in a public repo is a leak
   "192\.168\.[0-9]+\.[0-9]+"
   "10\.([0-9]+\.){2}[0-9]+"
   "172\.(1[6-9]|2[0-9]|3[0-1])\.[0-9]+\.[0-9]+"
@@ -60,6 +60,6 @@ if [ "$FAIL" = 0 ]; then
   echo "sanitize-sweep: clean (0 hits across ${#PATTERNS[@]} patterns)"
   exit 0
 else
-  echo "sanitize-sweep: LEAK DETECTED — fix or justify (see AGENTS.md: the register is role terms)"
+  echo "sanitize-sweep: LEAK DETECTED. Fix or justify (see AGENTS.md: the register is role terms)"
   exit 1
 fi
