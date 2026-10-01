@@ -49,7 +49,7 @@ problem. Check the PVE version first (`/version`), then the format.
 | snapshot create/list/rollback/delete | resize, lock, vzdump |
 | start/stop/shutdown | terminal / VNC console |
 | tasks, storage, version | cluster-level endpoints (`/cluster/*`) |
-| create/destroy guests (depending on exact role) | — |
+| create/destroy guests (depending on exact role) | - |
 
 So the division of labor is: **API for state and lifecycle, SSH for
 config surgery**. The console (VNC/noVNC) is the escape hatch for a
@@ -81,10 +81,10 @@ reinstall candidate, not a thing to keep patching.
 PBS listens on `:8008` of the host running Proxmox Backup Server, with
 its own API user/token (PVEBackup role). Useful endpoints:
 
-- `GET /api2/job` — backup jobs, state, last success
-- `GET /api2/repository` — datastores, usage, pruning
-- `POST /api2/job/<jobid>` — trigger a job
-- `GET /api2/repository/<ns>/` — volumes in a namespace
+- `GET /api2/job`: backup jobs, state, last success
+- `GET /api2/repository`: datastores, usage, pruning
+- `POST /api2/job/<jobid>`: trigger a job
+- `GET /api2/repository/<ns>/`: volumes in a namespace
 
 One PBS-specific fact that bites: a PBS host is **not** a PVE host
 with a different port. It has no `pvesm`/`pveum`/`pvesh`; it is its own

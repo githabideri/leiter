@@ -11,7 +11,7 @@ number of agent clients). The layout is fixed:
 ```
 skills/<name>/
 ├── SKILL.md          # required: frontmatter + the instructions
-├── scripts/          # the CLI(s) the skill drives — bundled, not referenced
+├── scripts/          # the CLI(s) the skill drives, bundled not referenced
 ├── references/       # deeper docs, read only when the task needs them
 └── assets/           # templates, config skeletons, other static resources
 ```
