@@ -1,56 +1,51 @@
 # Leiter
 
-> Agent-run home computing.
+*Leiter* is German: ladder, conductor, the one who leads.
 
-**Leiter** — German: *ladder* / *conductor* / *the one who leads*. Pick your
-favourite. All three are right.
+This is the public side of a private homelab. The private repo is where
+the facts live: which box, which address, which id, who uses what. This
+repo is where the shape lives: the tools and operating practices of a
+multi-site home estate run by local agents, written so you can take them
+and run them on your own estate. It holds no machine list and no
+addresses, and no names; only role terms, like "the primary host" or
+"an offsite site".
 
-Leiter is a public companion to a private homelab that it grew out of. It is
-**not** a floor plan of that homelab: it contains no machine list, no
-addresses, no CT ids, no names. It contains the *shape* of a multi-site home
-computer estate — and the working tools to run one.
+## Why an agent runs the estate
 
-## The idea
+A homelab is a small computer estate you run yourself. A few sites
+(a main location, an offsite, a VPS, some scattered small boards),
+joined by a mesh VPN (Tailscale, or a self-hosted Headscale if you want
+to own the control plane). On top: virtualization, NAS, monitoring, and
+a long tail of self-hosted services.
 
-A "homelab" is a small computer estate you run yourself: a primary site, an
-offsite site, a VPS, and a scatter of small boards — connected by a VPN
-mesh (Tailscale, or a self-hosted Headscale if you'd rather own the control
-plane), running virtualization, NAS, monitoring, and a long tail of
-self-hosted services.
-
-**Leiter is the claim that such an estate can be *run by local agents*, not
-merely maintained by a human.** The estate's documentation is its system of
-record; agents read it as state, act on it through a corpus of skills and
-CLI tools, and write their work back as documentation. The estate stays
-local and self-owned — no cloud dependency, no SaaS middle layer — while the
-*operation* of it (the boring 90%) is done by a local coding agent under
-explicit, auditable rules.
-
-This repo is what that approach looks like from the outside: the reusable
-parts, written so a stranger can take them and run them on *their* estate.
+The estate's documentation is its system of record, and local coding
+agents do the boring 90%. An agent reads the docs as state, acts through
+a corpus of skills and CLI tools, and writes the result back into the
+docs. The estate stays local and self-owned; the operation is auditable,
+because every action lands in a session log. This repo is that
+approach, seen from the outside.
 
 ## The three layers
 
 | Layer | What you get | Where |
 |---|---|---|
-| **1. Tools you can steal** | Agent skills (the [open Agent-Skills standard](https://agentskills.io)): self-contained folders — `SKILL.md` + bundled CLI scripts + reference docs — that you install into your agent and it immediately uses against *your* estate: virtualization, NAS, reverse proxy/DNS, monitoring, KVM-over-network, phones, backup flows, a component-graph tool. | [`skills/`](skills/README.md) |
-| **2. The practice** | How an agent-run estate is actually *operated*: documentation as state, a machine-readable component dependency graph (staleness audit + blast-radius queries), session discipline and agent memory, secret handling, the public/private split, change governance. | [`docs/practice/`](docs/practice/README.md) |
-| **3. The concepts** | The estate as a *concept*: multi-site with an offsite, the mesh backbone, what a "host / guest / service" ontology looks like — ideas you adapt, not a layout you copy. | [`docs/`](docs/README.md) |
+| **Tools you can steal** | Agent skills in the [open Agent-Skills format](https://agentskills.io): a folder with a `SKILL.md`, bundled CLI scripts, and reference docs. Point your agent at the folder and it operates the matching part of your estate: virtualization, NAS, DNS and reverse proxy, monitoring, KVM over the network, phones, backup flows, a component-graph tool. | [`skills/`](skills/README.md) |
+| **The practice** | How an agent-run estate is operated day to day: documentation as state, a machine-readable component graph (staleness audits, blast-radius queries), session and memory discipline, secret handling, the public/private split, change governance. | [`docs/practice/`](docs/practice/README.md) |
+| **The concepts** | The estate as a concept: multi-site with an offsite, the mesh spine, a host/guest/service ontology. Ideas to adapt to your setup, rather than a layout to copy. | [`docs/`](docs/README.md) |
 
-**What this is not.** Not a turnkey installer (your estate is not our
-estate — nothing here deploys anything by itself), and not a catalogue of
-one person's choices as if they were the only ones. Every skill states what
-it assumes and what *you* must bring.
+Every skill states what it assumes and what you have to supply. Nothing
+here deploys anything by itself.
 
-## How it stays honest: the overlay contract
+## The public/private split
 
-The public repo holds the **shape**; the private instance holds the
-**values**. Templates carry neutral tokens (`@@SITE_A@@`, `@@CT_ID@@` …);
-your private repo supplies the mapping at deploy time. One source of truth,
-zero drift, publishable without leaking anything. The mechanics:
+A template in the public repo carries neutral tokens (`@@SITE_A@@`,
+`@@CT_ID@@`, …). Your private repo holds the mapping that resolves
+them; the join happens at deploy time. Every fact therefore lives in
+exactly one place, so there is nothing to drift, and the public side
+never sees it. Mechanics in
 [`docs/overlay-contract.md`](docs/overlay-contract.md).
 
-## Repository map
+## The repo
 
 ```
 leiter/
@@ -69,19 +64,19 @@ leiter/
 
 ## Status
 
-Early. The skeleton is in place; the corpus grows by deliberate extraction
-from the private instance (each piece written or generalized on purpose —
-this is a curation project, not a mirror). The first skills to land are the
-general ones; service-specific ones follow as they prove portable.
+Early. The base docs are in; the corpus grows by deliberate extraction
+from the private instance, one piece at a time, each written or
+generalized on purpose. It is curation, so it moves at curation speed.
+The general skills land first.
 
-## Related public repos
+## Related
 
-- **monitoring-stack** — Prometheus/Grafana for a homelab: the worked
-  example of the overlay contract (neutral tokens in the repo, values from
-  your private repo at deploy time).
-- **llmlab** — local LLM inference on consumer GPUs: the same
+- **monitoring-stack**: Prometheus and Grafana for a homelab. The
+  overlay contract in production, neutral tokens in the repo and values
+  from your private repo at deploy time.
+- **llmlab**: local LLM inference on consumer GPUs. The same
   shape/values split applied to a research corpus.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

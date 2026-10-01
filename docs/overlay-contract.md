@@ -2,9 +2,9 @@
 
 How one body of knowledge can be **public** (reusable by anyone) and
 **instance-specific** (yours, with your real addresses, ids, and secrets)
-without duplication, drift, or leakage.
+at the same time, without the two drifting apart.
 
-This is the mechanism that makes publishing homelab knowledge safe — and
+This is the mechanism that makes publishing homelab knowledge safe, and
 the reason the public repos in this family can be this concrete without
 ever naming a machine.
 
@@ -35,24 +35,24 @@ Your private repo supplies a **mapping file** that resolves the tokens:
 ```
 
 A tiny deploy step substitutes tokens with values **on the target machine,
-or in a gitignored working copy** — the substituted file never enters the
+or in a gitignored working copy**: the substituted file never enters the
 public repo, and the mapping file never leaves the private one.
 
-## Why tokens (and not just "fill in the blanks" docs)
+## Why tokens
 
 1. **One source of truth, zero drift.** The template *is* the document;
    there is no separate "public version" and "private version" to keep in
    sync. The value exists in exactly one place.
 2. **Publishable by construction.** A sanitizer sweep over the public repo
    is a *backstop*, not the mechanism: if the template has no secrets by
-   design, there is nothing to leak. (Sweeps still run on every push — see
-   `scripts/sanitize-sweep.sh` — because a template can accidentally
-   *describe* an instance in prose even when its fields are tokens.)
+   design, there is nothing to leak. Sweeps still run on every push (see
+   `scripts/sanitize-sweep.sh`), because a template can accidentally
+   *describe* an instance in prose even when its fields are tokens.
 3. **Adoptable in one step.** A reader takes the public repo as-is; they
    write one mapping file for *their* estate and everything in it becomes
    theirs. That single file is the entire onboarding.
 4. **Reversible.** Because values never live in the template, "go back to
-   generic" is deleting a line from the mapping — not scrubbing history.
+   generic" is deleting a line from the mapping, not scrubbing history.
 
 ## The worked example
 
@@ -60,8 +60,8 @@ The **monitoring-stack** repo (Prometheus + Grafana for a homelab) is this
 contract in production:
 
 - Its Grafana dashboards contain display strings with neutral tokens
-  (`@@SITE_A@@`, `@@SITE_B@@`, …) — no real site names anywhere in the
-  repo; a sweep for them returns zero hits.
+  (`@@SITE_A@@`, `@@SITE_B@@`, …); no real site names appear anywhere
+  in the repo, and a sweep for them returns zero hits.
 - The deploy role carries a **site-map** variable. In the public repo it is
   empty/placeholder; in the private instance it is the mapping that names
   the real sites.
@@ -72,8 +72,7 @@ contract in production:
 
 So a reader can stand up the whole stack from the public repo against
 *their* machines, and the operator of the estate this came from runs the
-*same* templates with a different mapping file. Same shape, two value
-sets, one code path.
+*same* templates with a different mapping file.
 
 ## Using it yourself
 
@@ -86,20 +85,20 @@ sets, one code path.
    token; add a short comment at first use. The template should read
    naturally *with* placeholders ("on @@PRIMARY_HOST@@, enable…").
 3. **Write the private mapping.** One file, values only. It is a secret
-   (it is your estate's address book) — same handling as any secret:
+   (it is your estate's address book); same handling as any secret:
    never committed to a public remote, ideally not even in plaintext if
    you can avoid it.
 4. **Substitute at deploy, not at commit.** `envsubst`-style rendering into
    a gitignored path or directly onto the target. Commit only the template
    and the (token-free) mapping *schema*.
 5. **Sweep on every push.** The sanitizer greps the public repo for
-   address classes and identifier shapes. Zero hits, always — including in
+   address classes and identifier shapes. Zero hits, always, including in
    commit *messages* and history.
 
 ## The failure modes (so you can avoid them)
 
 - **Prose leaks what fields don't.** A field is tokenized but the doc says
-  "on the Vienna box…" — the *word* is the identifier. The register for
+  "on the big box…": the *word* is the identifier. The register for
   public text is **role terms** (the domain model's vocabulary), and the
   sweep pattern list should include your site names as words, not just
   address shapes.

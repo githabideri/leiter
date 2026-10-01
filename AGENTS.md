@@ -1,8 +1,8 @@
-# AGENTS.md — working rules for the leiter repo
+# AGENTS.md: working rules for the leiter repo
 
-Read this before touching anything here. The one-sentence version: **this
-repo is public from the first commit — every byte you write is read by
-strangers, and the sweep at the end is the only guard.**
+Read this before touching anything here. This repo is public from the
+first commit: every byte you write is read by strangers, and the sweep at
+the end is the only guard.
 
 ## The public boundary (non-negotiable)
 
@@ -22,7 +22,7 @@ redacted: "the primary host", "the GPU host", "an offsite site", "a VPS",
 "RTX 3090, 64 GB"); *identity* is not (which machine, where, who). When a
 fact only makes sense with the identity, generalize the fact or drop it.
 
-**Before every push, run the sweep — all file types, zero hits required:**
+**Before every push, run the sweep: all file types, zero hits required.**
 
 ```sh
 scripts/sanitize-sweep.sh
@@ -30,8 +30,8 @@ scripts/sanitize-sweep.sh
 
 It greps for identifier *classes* (address ranges, tailnet DNS, hostname
 shapes). It cannot catch everything by itself (a novel hostname, a name, a
-telling combination of specs) — so the sweep is a floor, not a proof. Read
-what you wrote the way a stranger would read it before pushing. This repo's
+telling combination of specs). It is a floor, not a proof: read what you
+wrote the way a stranger would, before you push. This repo's
 own history is also public: a leak in commit N survives a fix in commit N+1.
 If a leak ever happens, it is a history rewrite (fresh repo + move), not a
 patch on top.
@@ -41,8 +41,8 @@ patch on top.
 Skills follow the [open Agent-Skills standard](https://agentskills.io):
 `skills/<name>/` with `SKILL.md` (frontmatter: `name`, `description`,
 optionally `license`, `compatibility`), `scripts/`, `references/`,
-`assets/`. The full house conventions — including where prerequisites and
-setup live — are in [`skills/README.md`](skills/README.md). One unit per
+`assets/`. The full house conventions (including where prerequisites and
+setup live) are in [`skills/README.md`](skills/README.md). One unit per
 capability: the skill is the manual, the scripts are the machine, and the
 two ship together so a reader's agent gets both at once.
 
@@ -63,8 +63,8 @@ defect.
 
 ## Git workflow
 
-- Dual remotes: `origin` (self-hosted Gitea — the primary) and `github`
-  (the public mirror). **Push both** — forgetting one is how 404s are born.
+- Dual remotes: `origin` (self-hosted Gitea, the primary) and `github`
+  (the public mirror). **Push both**; forgetting one is how 404s are born.
   The sweep runs in `pre-push`; do not bypass it.
 - Commit messages: imperative, specific, one logical change per commit.
 - This repo is a submodule of the private homelab repo; bump the submodule

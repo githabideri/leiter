@@ -12,7 +12,7 @@ The conceptual and practice layer of leiter. Index:
 
 - **Shape, not values.** These docs describe *kinds of things* and *rules
   about them*. Concrete facts (which box, which address, which id) belong to
-  a private instance — if a doc needs one, it uses a `@@TOKEN@@` per the
+  a private instance; if a doc needs one, it uses a `@@TOKEN@@` per the
   overlay contract.
 - **Role terms are the vocabulary.** "The primary host", "an offsite site",
   "a VPS", "a small board". Never a real hostname.

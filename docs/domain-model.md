@@ -1,13 +1,13 @@
 # The domain model
 
-The shared vocabulary of a homelab as an *operated system* — what kinds of
+The shared vocabulary of a homelab as an *operated system*: what kinds of
 things exist, how they relate, and which invariants keep the description
 honest. Read this as the definition of the nouns and verbs everything else
 in this repo (and in the private instances that adopt it) uses.
 
 The framing is an **operational ontology**: a formal, shared description of
 the domain in which a system operates, where *reads traverse the model and
-writes are gated* — every change to the estate goes through a typed action
+writes are gated*. Every change to the estate goes through a typed action
 that is audited and propagates back to the sources of record. You don't
 need the name to use it; you need the three properties:
 
@@ -34,11 +34,11 @@ need the name to use it; you need the three properties:
 Two deliberate choices: **guests are first-class** (in a virtualized estate
 most *things* are guests, and "which guest" is where every operational fact
 lives); and **skills/tools are in the same graph as hardware** (the
-capability layer is part of the system, not an afterthought bolted on).
+capability layer is part of the estate, not an appendix to it).
 
 ## The relations
 
-Every edge points **dependent → dependency** ("A needs B") — with one
+Every edge points **dependent → dependency** ("A needs B"); one edge type is the
 deliberate exception, marked as a *flow*:
 
 | Relation | Direction means | Example |
@@ -52,7 +52,7 @@ deliberate exception, marked as a *flow*:
 | `replicates_to` | *data flow* (the exception): backup/replication goes to this target | the flash NAS → the HDD backup NAS → the offsite NAS |
 
 The `replicates_to` asymmetry matters: a dependency edge means "A breaks
-if B dies"; a flow edge means "A's *backup path* breaks if B dies" — A
+if B dies"; a flow edge means "A's *backup path* breaks if B dies"; A itself
 keeps running. A blast-radius query must treat them differently, or it
 will tell you your media server died when actually only its backup
 stopped.
@@ -96,7 +96,7 @@ invariants, three things stop being vibes:
 - **Blast radius** becomes a query (`affected <x>`: everything that would
   break if x changed) — not a hope.
 - **Onboarding** (of a human *or* a fresh agent session) becomes "read the
-  model" — not archaeology through a chat log.
+  model", not archaeology through a chat log.
 
 The model is only as good as its discipline, which is why invariant 1 is
 first: the moment a fact is comfortable living in two places, the agent
