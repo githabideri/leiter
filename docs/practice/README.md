@@ -14,9 +14,9 @@ in the private instance and not yet written up.
 |---|---|---|
 | *doc-state.md* | How does documentation double as the system's state, and how do you keep it from rotting? (State vs. actions, single-source-of-record, frozen reports, the session layer.) | growing |
 | *component-graph.md* | How do you keep a machine-readable map of the whole estate, and use it to find staleness and answer "what breaks if I change X"? (The graph discipline: derive, don't duplicate; lint; blast radius; the staleness audit as a standing practice.) | growing |
-| *sessions-and-memory.md* | How does a fleet of agent sessions stay knowable? (Session naming, sidecar summaries, searchable memory over past sessions, redaction on commit.) | planned |
-| *secrets.md* | Where do secrets live, how do tools get them without ever seeing them in a doc, and how do you redact a log that already leaked one? (Schema-declared env files, injection at run time, the redaction pipeline.) | planned |
-| *change-governance.md* | What may an agent change on its own, what needs a human, and how does a change stay attributable? (The three-zone model: free parameters / repo-owned plumbing / visible provenance; the concurrency registry; verification vocabulary.) | planned |
+| *sessions-and-memory.md* | How does a fleet of agent sessions stay knowable? (Session naming, sidecar summaries, searchable memory over past sessions, redaction on commit.) | growing |
+| *secrets.md* | Where do secrets live, how do tools get them without ever seeing them in a doc, and how do you redact a log that already leaked one? (Schema-declared env files, injection at run time, the redaction pipeline.) | growing |
+| *change-governance.md* | What may an agent change on its own, what needs a human, and how does a change stay attributable? (The three-zone model: free parameters / repo-owned plumbing / visible provenance; the concurrency registry; verification vocabulary.) | growing |
 | *agent-skills-corpus.md* | How do you build and keep a corpus of skills that actually gets used? (The trigger-as-description discipline, the token budget, splitting vs. growing, the bundle layout; cross-ref `../skills/README.md`.) | growing |
 
 ## Conventions for writing here
