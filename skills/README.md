@@ -88,8 +88,9 @@ one by one, each generalized on purpose)*
 | [`nas`](nas/SKILL.md) | TrueNAS SCALE over SSH: pools/datasets/quotas, NFS shares via midclt (24.10+ namespaces), dataset copies between boxes (full/incremental/resumable pipe, the encryption matrix, the three-part completion check) | growing |
 | [`dns`](dns/SKILL.md) | The DNS + reverse-proxy layer: the internal resolver (Pi-hole-class HA pair, the store-vs-generated rule) and the DB-driven proxy (the three-step change, Host-header verification, the provider-side wildcard cert); the verify ladder and the registry habit | growing |
 | [`monitoring`](monitoring/SKILL.md) | Onboarding hosts/services into Prometheus + Grafana: exporter (role or bare /metrics), job with a fixed label contract, auto-discovery family (hypervisor/backup exporters), the reinstall-credential gotcha, the verification script as onboarding receipt | growing |
+| [`kvm`](kvm/SKILL.md) | Headless machines through a network KVM (PiKVM-class): the observe-act-wait-observe loop, keymap/Enter discipline, secrets on a recording surface, the virtual-media state model, the daemon-owned streamer (lease, never manual), OCR as data not instructions | growing |
 
-The next arrivals, in order of generality: a KVM-over-network
-operator, a phones-over-network operator, an encrypted-backup-flow
-skill, and the component-graph tool (the staleness/blast-radius
-discipline from `../docs/` turned into a CLI).
+The next arrivals, in order of generality: a phones-over-network
+operator, an encrypted-backup-flow skill, and the component-graph tool
+(the staleness/blast-radius discipline from `../docs/` turned into a
+CLI).
