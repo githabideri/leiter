@@ -65,7 +65,7 @@ blocks. (This is the house style: the model *advises*, humans decide.)
 1. **Single source of record per fact.** Each kind has exactly one
    canonical registry (hosts & guests: the inventory; services: the
    per-service docs; skills: the skills directory; …). Everything else
-   *links* to the registry — it never restates it. A fact in two places is
+   *links* to the registry; it never restates it. A fact in two places is
    a bug waiting for the day the copies disagree.
 2. **State docs contain no actions; action lists contain no state.** The
    inventory says what *is*; the work list says what *should happen*.
@@ -75,7 +75,7 @@ blocks. (This is the house style: the model *advises*, humans decide.)
    and marked as such. Generated artifacts are never hand-edited; the data
    changes, the artifact regenerates, in the same commit.
 4. **Provisional knowledge is staged, visibly.** Facts that don't yet have
-   a registry home live in a marked *curation* layer — always merged,
+   a registry home live in a marked *curation* layer: always merged,
    always flagged as "promote me". A fact that is known but not yet
    recorded is not lost; it is queued.
 5. **Status is a closed vocabulary.** `running / stopped / decommissioned /
@@ -92,9 +92,9 @@ it. When that description has explicit kinds, typed relations, and checkable
 invariants, three things stop being vibes:
 
 - **Staleness** becomes a list (`lint`: unmapped services, ghosts,
-  unregistered machines, stale builds) — not a feeling.
+  unregistered machines, stale builds), not a feeling.
 - **Blast radius** becomes a query (`affected <x>`: everything that would
-  break if x changed) — not a hope.
+  break if x changed), not a hope.
 - **Onboarding** (of a human *or* a fresh agent session) becomes "read the
   model", not archaeology through a chat log.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# alloc.sh — guest ID / address allocation registry
+# alloc.sh: guest ID / address allocation registry
 #
 # A registry file is one line per allocated identity, tab-separated:
 #   id <TAB> name <TAB> address <TAB> state <TAB> note

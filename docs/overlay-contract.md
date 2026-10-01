@@ -17,7 +17,7 @@ A template in the public repo carries **neutral tokens** where instance
 facts would go:
 
 ```yaml
-# public repo — provisioning/<something>.yml (shape)
+# public repo: provisioning/<something>.yml (shape)
 site:      "@@SITE_A@@        # e.g. your main location"
 host:      "@@PRIMARY_HOST@@"
 ct_id:     "@@CT_ID@@"
@@ -27,7 +27,7 @@ lan_ip:    "@@LAN_IP@@"
 Your private repo supplies a **mapping file** that resolves the tokens:
 
 ```yaml
-# private repo — the overlay (values; never committed anywhere public)
+# private repo: the overlay (values; never committed anywhere public)
 @@SITE_A@@:       my-actual-site-name
 @@PRIMARY_HOST@@: my-actual-host
 @@CT_ID@@:       412

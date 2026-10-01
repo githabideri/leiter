@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# pve.sh — Proxmox VE API wrapper (source this; no external deps beyond curl+jq)
+# pve.sh: Proxmox VE API wrapper (source this; no external deps beyond curl+jq)
 #
 # You bring: PVE_HOST (address:8006 implied), PVE_NODE, PVE_API_TOKEN
 #   (full "USER@REALM!ID=UUID" payload; see references/pve-api.md),
 #   optional PVE_SSH_TARGET for the CLI fallback, PVE_CA (path to CA
-#   cert; default is -k, i.e. skip verification — fine on a private
+#   cert; default is -k, i.e. skip verification; fine on a private
 #   LAN, wrong on the internet).
 #
 # The token value is a secret: load it from your config at the moment

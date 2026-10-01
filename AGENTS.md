@@ -12,7 +12,7 @@ This repo documents *a* homelab pattern, never *our* homelab. Never commit:
   CGAT `100.64-127.*`) or port+IP pairs that identify a specific box
 - internal hostnames, domains, or tailnet node names
 - Proxmox VM/CT ids, VMIDs, serials, MACs, hardware purchase details
-- secrets, tokens, keys, passwords — ever
+- secrets, tokens, keys, passwords (ever)
 - personal names, family details, or any identifying detail about the
   private instance's people
 
