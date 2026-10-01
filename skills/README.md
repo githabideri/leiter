@@ -85,10 +85,10 @@ one by one, each generalized on purpose)*
 | [`klartext`](klartext/SKILL.md) | The de-slop pass for prose: audit / rewrite / voice modes, the tell ranking, the do-no-harm guards | stable (v1) |
 | [`proxmox`](proxmox/SKILL.md) | Operating PVE hosts: LXC/VM lifecycle (API with SSH fallback, the blind-API rule), snapshots, PBS backup/restore, ID/address allocation from a registry, standalone guest migration | growing |
 | [`varlock`](varlock/SKILL.md) | The .env schema discipline: declared shape committed, values on the machine; load/run injection, audit, scan, the redaction integration, optional encryption tier | growing |
+| [`nas`](nas/SKILL.md) | TrueNAS SCALE over SSH: pools/datasets/quotas, NFS shares via midclt (24.10+ namespaces), dataset copies between boxes (full/incremental/resumable pipe, the encryption matrix, the three-part completion check) | growing |
 
-The next arrivals, in order of generality: a NAS operator (ZFS pools,
-shares, send/recv), a DNS + reverse-proxy operator, a monitoring
-operator (cross-ref the monitoring-stack repo), a KVM-over-network
-operator, a phones-over-network operator, an encrypted-backup-flow
-skill, and the component-graph tool (the staleness/blast-radius
-discipline from `../docs/` turned into a CLI).
+The next arrivals, in order of generality: a DNS + reverse-proxy
+operator, a monitoring operator (cross-ref the monitoring-stack repo), a
+KVM-over-network operator, a phones-over-network operator, an
+encrypted-backup-flow skill, and the component-graph tool (the
+staleness/blast-radius discipline from `../docs/` turned into a CLI).
