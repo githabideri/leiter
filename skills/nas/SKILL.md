@@ -1,51 +1,60 @@
 ---
 name: nas
 description: >
-  Operate TrueNAS SCALE NAS boxes over SSH: pools, datasets and quotas,
-  NFS shares through the midclt API (the 24.10+ namespace renames included),
-  and dataset copies between boxes with zfs send/recv: full streams,
-  incremental deltas, resumable pipes, and the encryption interactions that
-  silently break them. Covers the gotchas that bite live: hidden
+  Operate ZFS NAS boxes: TrueNAS SCALE appliances and bare ZFS hosts
+  (a Proxmox box that doubles as the NAS): pools, datasets and quotas;
+  NFS shares via the midclt API on appliances (the 24.10+ namespace
+  renames included) and via an explicit /etc/exports on bare hosts;
+  dataset copies between boxes with zfs send/recv: full streams,
+  incremental deltas, resumable pipes, and the encryption interactions
+  that silently break them. Covers the gotchas that bite live: hidden
   root_squash (verify with exportfs -s, not /etc/exports), the FreeBSD
   versus OpenZFS CLI differences, readonly root dataset, tiny-NAS-RAM OOM
-  kills, and the three-part completion check. Use for "create an NFS share",
-  "copy this dataset to the other box", "why do NFS writes give EACCES",
-  "my zfs send died", "set a quota", "how fresh is this mirror". Not for:
-  where the estate's NAS boxes live (that is instance knowledge, not this
-  skill), non-ZFS NAS systems, or the backup software that consumes the
-  shares (that skill owns its own side).
+  kills, degraded single-leg mirrors, and the three-part completion
+  check. Use for "create an NFS share", "copy this dataset to the other
+  box", "why do NFS writes give EACCES", "my zfs send died", "set a
+  quota", "is this pool still redundant", "how fresh is this mirror".
+  Not for: where the estate's NAS boxes live (instance knowledge, not
+  this skill), non-ZFS NAS systems (Synology/DSM is a different family),
+  or the backup software that consumes the shares (that skill owns its
+  own side).
 ---
 
 # NAS (TrueNAS SCALE + ZFS)
 
 You bring:
 
-- **one or more TrueNAS SCALE 24.10+ hosts** with **root SSH** (an
-  agent key per box is the estate convention);
+- **one or more ZFS NAS endpoints**, of either family: a **TrueNAS
+  SCALE appliance** (SSH root; `midclt` is its API) or a **bare ZFS
+  host** (a Proxmox/Debian box with a local pool and `nfs-kernel-server`;
+  `references/host-zfs.md` owns this family);
 - for multi-GB copies, **a direct key between the two boxes** so the
   pipe runs on the LAN between them, not through whichever agent
   machine happens to be doing the work;
 - a sense of which box has the RAM: the ssh **client** side of a long
   pipe must be the box with the memory (see the pipe rules).
 
-The skill contains: the `midclt` API conventions, the dataset and
-dataset-copy recipes (with the flags that are load-bearing), the
-CLI/encryption reference, and `scripts/zfs-pipe.sh`, the resumable
+The skill contains: the two families (appliance API, bare host), the
+dataset and dataset-copy recipes (with the flags that are load-bearing),
+the CLI/encryption reference, and `scripts/zfs-pipe.sh`, the resumable
 copy pipe as a script.
 
 ## Which task, which file
 
 | Task | Read |
 |---|---|
-| NFS shares, dataset/quota work, the gotcha list | this file |
+| NFS shares, dataset/quota work, the gotcha list (appliance family) | this file |
+| The bare-host family: pool + explicit exports, PVE coexistence, mirror health | `references/host-zfs.md` |
 | A dataset copy between boxes: the full recipe, resume, delta converge, the flags and why they are load-bearing | `references/send-recv.md` |
 | FreeBSD vs. OpenZFS CLI differences, the encryption × `recv -F` matrix, the OpenZFS 2.3 incremental bug, readonly root, swap on ZFS | `references/cli-and-encryption.md` |
 | Run a multi-hour copy right now | `scripts/zfs-pipe.sh` |
 
-## midclt (the SCALE API CLI)
+## midclt (the appliance's API CLI)
 
-`midclt` (at `/bin/midclt`) is the reliable way to do what the UI does.
-SCALE 24.10+ **renamed the namespaces**: pre-24.10 wiki examples using
+`midclt` (at `/bin/midclt`) is the reliable way to do what the UI does,
+on the appliance family. Bare hosts have no midclt; their source of
+truth is `/etc/exports` (`references/host-zfs.md`). SCALE 24.10+ **renamed
+the namespaces**: pre-24.10 wiki examples using
 `share.nfs` and `data.pool` are mostly wrong now.
 
 | Task | 25.04 call |
@@ -86,7 +95,10 @@ set `maproot_user=root` and `maproot_group=root` on the share, then
 re-check `exportfs -s` for `no_root_squash`. Any client that writes as
 root (most backup software, most VMs) needs this. The new-share
 recipe is the two midclt calls above, in order: create, then update
-with the maproot pair.
+with the maproot pair. The bare-host family runs the same rule in
+reverse visibility: the exports file is the source of truth there, but
+`root_squash` is still the default when omitted, so write it
+explicitly in both families.
 
 The zsh gotchas while you are in there (SCALE's default shell):
 `exportfs` is the NFS command, `export -r` prints environment
