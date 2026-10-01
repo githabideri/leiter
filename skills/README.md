@@ -82,9 +82,9 @@ one by one, each generalized on purpose)*
 
 | Skill | Capability | Status |
 |---|---|---|
-| — | — | — |
+| [`klartext`](klartext/SKILL.md) | The de-slop pass for prose: audit / rewrite / voice modes, the tell ranking, the do-no-harm guards | stable (v1) |
 
-The intended first arrivals, in order of generality: a virtualization
+The next arrivals, in order of generality: a virtualization
 operator (Proxmox hosts, LXC/VM lifecycle, the VMID-allocation discipline),
 a NAS operator (ZFS pools, shares, send/recv), a DNS + reverse-proxy
 operator, a monitoring operator (cross-ref the monitoring-stack repo),
