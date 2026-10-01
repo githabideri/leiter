@@ -26,14 +26,17 @@ This is the overlay contract applied to credentials: the schema travels
 in the repo and can even be published, the values never leave the
 machine.
 
-An encrypted local vault (the estate uses `varlock`) resolves the
-values at runtime: the tooling asks it to load a config directory and
-gets the resolved environment; sensitive values live in an encrypted
-blob with a device-local key, so a stolen checkout of the repo yields
-no secrets. The same tooling audits the code against the schema (a key
-the code uses but the schema does not declare is a finding), scans
-files for plaintext values, and can run a command with the environment
-injected without the value ever passing through the shell history.
+The estate's resolver is the open-source `varlock` CLI (the `varlock`
+skill in `../skills/`): it loads a config directory against the schema
+and hands the tooling the resolved environment, or runs a command with
+the environment injected so the value never touches the shell history.
+The same tooling audits the code against the schema (a key the code
+uses but the schema does not declare is a finding), scans files for
+plaintext values, and can pull from a real secret manager through
+`exec(...)` sources. The encrypted-blob tier (device-local key,
+biometric reveal) exists but this estate runs the **plain mode**: single
+operator, strict file permissions, redaction as the control. Switch to
+the encrypted tier when a machine is shared.
 
 ## The agent's contract
 
