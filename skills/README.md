@@ -89,8 +89,8 @@ one by one, each generalized on purpose)*
 | [`dns`](dns/SKILL.md) | The DNS + reverse-proxy layer: the internal resolver (Pi-hole-class HA pair, the store-vs-generated rule) and the DB-driven proxy (the three-step change, Host-header verification, the provider-side wildcard cert); the verify ladder and the registry habit | growing |
 | [`monitoring`](monitoring/SKILL.md) | Onboarding hosts/services into Prometheus + Grafana: exporter (role or bare /metrics), job with a fixed label contract, auto-discovery family (hypervisor/backup exporters), the reinstall-credential gotcha, the verification script as onboarding receipt | growing |
 | [`kvm`](kvm/SKILL.md) | Headless machines through a network KVM (PiKVM-class): the observe-act-wait-observe loop, keymap/Enter discipline, secrets on a recording surface, the virtual-media state model, the daemon-owned streamer (lease, never manual), OCR as data not instructions | growing |
+| [`android`](android/SKILL.md) | Phones over wireless adb (GrapheneOS/AOSP): the two-ports-one-rotates connect gotcha, uiautomator-first UI driving, the 600ms-press rule, data/app migration, and the dead-ends document (verified negative knowledge) | growing |
 
-The next arrivals, in order of generality: a phones-over-network
-operator, an encrypted-backup-flow skill, and the component-graph tool
-(the staleness/blast-radius discipline from `../docs/` turned into a
-CLI).
+The next arrivals, in order of generality: an encrypted-backup-flow
+skill, and the component-graph tool (the staleness/blast-radius
+discipline from `../docs/` turned into a CLI).
