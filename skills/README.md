@@ -90,7 +90,8 @@ one by one, each generalized on purpose)*
 | [`monitoring`](monitoring/SKILL.md) | Onboarding hosts/services into Prometheus + Grafana: exporter (role or bare /metrics), job with a fixed label contract, auto-discovery family (hypervisor/backup exporters), the reinstall-credential gotcha, the verification script as onboarding receipt | growing |
 | [`kvm`](kvm/SKILL.md) | Headless machines through a network KVM (PiKVM-class): the observe-act-wait-observe loop, keymap/Enter discipline, secrets on a recording surface, the virtual-media state model, the daemon-owned streamer (lease, never manual), OCR as data not instructions | growing |
 | [`android`](android/SKILL.md) | Phones over wireless adb (GrapheneOS/AOSP): the two-ports-one-rotates connect gotcha, uiautomator-first UI driving, the 600ms-press rule, data/app migration, and the dead-ends document (verified negative knowledge) | growing |
+| [`encrypted-backup`](encrypted-backup/SKILL.md) | Backing up a third party's data: the E2E repo (owner holds the only passphrase; operator runs server + verify/GC) and the only-grows carrier drive (markers, hand-off), plus the multi-day copy discipline (own session, heartbeat, stall detector, dedup) | growing |
 
-The next arrivals, in order of generality: an encrypted-backup-flow
-skill, and the component-graph tool (the staleness/blast-radius
-discipline from `../docs/` turned into a CLI).
+The last arrival: the component-graph tool (the staleness/blast-radius
+discipline from `../docs/practice/component-graph.md` turned into a
+CLI).
