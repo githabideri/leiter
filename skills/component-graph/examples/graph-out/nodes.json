@@ -1,0 +1,91 @@
+[
+ {
+  "id": "guest/ct-100",
+  "kind": "guest",
+  "name": "ct-100",
+  "status": "running",
+  "source": "extractors/inventory.py",
+  "site": "main",
+  "edges": {
+   "runs_on": [
+    "host/alpha"
+   ]
+  }
+ },
+ {
+  "id": "guest/ct-200",
+  "kind": "guest",
+  "name": "ct-200",
+  "status": "stopped",
+  "source": "extractors/inventory.py",
+  "site": "main",
+  "edges": {
+   "runs_on": [
+    "host/alpha"
+   ]
+  }
+ },
+ {
+  "id": "guest/vm-10",
+  "kind": "guest",
+  "name": "vm-10",
+  "status": "running",
+  "source": "extractors/inventory.py",
+  "site": "offsite",
+  "edges": {
+   "runs_on": [
+    "host/beta"
+   ]
+  }
+ },
+ {
+  "id": "host/alpha",
+  "kind": "host",
+  "name": "alpha",
+  "status": "running",
+  "source": "extractors/inventory.py",
+  "site": "main",
+  "edges": {}
+ },
+ {
+  "id": "host/beta",
+  "kind": "host",
+  "name": "beta",
+  "status": "running",
+  "source": "extractors/inventory.py",
+  "site": "offsite",
+  "edges": {}
+ },
+ {
+  "id": "host/gamma",
+  "kind": "host",
+  "name": "gamma",
+  "status": "running",
+  "edges": {},
+  "source": "curation"
+ },
+ {
+  "id": "service/auth",
+  "kind": "service",
+  "name": "auth",
+  "status": "running",
+  "source": "extractors/services.py",
+  "edges": {
+   "runs_on": [
+    "host/beta"
+   ]
+  }
+ },
+ {
+  "id": "service/media",
+  "kind": "service",
+  "name": "media",
+  "status": "running",
+  "source": "extractors/services.py",
+  "edges": {
+   "runs_on": [
+    "host/alpha"
+   ]
+  }
+ }
+]

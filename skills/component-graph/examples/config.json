@@ -1,0 +1,10 @@
+{
+  "sources": [
+    {"path": "extractors/inventory.py", "lang": "python",
+     "watch": ["inventory.md"]},
+    {"path": "extractors/services.py", "lang": "python",
+     "watch": ["services"]}
+  ],
+  "curation": "curation.json",
+  "outdir": "graph-out"
+}

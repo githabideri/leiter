@@ -1,0 +1,13 @@
+{
+ "built": "2026-10-02T02:01:30.938820+02:00",
+ "inputs": {
+  "extractors/inventory.py": "24bbf969f9da68e0",
+  "inventory.md": "6712c83d6660cc5e",
+  "extractors/services.py": "a94019d4a12dca64",
+  "services": "a5948c811288953e",
+  "curation.json": "c17599f6f4f90b05"
+ },
+ "nodes": 8,
+ "edges": 5,
+ "git_dirty": []
+}

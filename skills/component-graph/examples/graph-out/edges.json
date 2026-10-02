@@ -1,0 +1,27 @@
+[
+ {
+  "from": "guest/ct-100",
+  "rel": "runs_on",
+  "to": "host/alpha"
+ },
+ {
+  "from": "guest/ct-200",
+  "rel": "runs_on",
+  "to": "host/alpha"
+ },
+ {
+  "from": "guest/vm-10",
+  "rel": "runs_on",
+  "to": "host/beta"
+ },
+ {
+  "from": "service/auth",
+  "rel": "runs_on",
+  "to": "host/beta"
+ },
+ {
+  "from": "service/media",
+  "rel": "runs_on",
+  "to": "host/alpha"
+ }
+]

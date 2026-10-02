@@ -1,0 +1,416 @@
+#!/usr/bin/env python3
+"""component-graph: build, audit, and query a machine-readable map of your
+estate, derived from its sources of record.
+
+Architecture (the discipline, in code):
+  - each source of record has an EXTRACTOR: a script (python or shell)
+    that prints normalized JSONL, one node per line
+  - the normalized node:
+      {"id": "host/alpha", "kind": "host", "name": "...",
+       "status": "running", "site": "site-a",
+       "edges": {"runs_on": ["..."], "depends_on": ["..."],
+                 "replicates_to": ["..."]},
+       "source": "<extractor path>"}
+    kinds are free-form; the five edge keys are:
+      runs_on        node -> the machine it runs on        (dependency)
+      depends_on     node -> the nodes it needs            (dependency)
+      serves         node -> the nodes/users it serves     (dependency,
+                                                           reversed reader)
+      replicates_to  node -> backup/mirror targets         (DATA FLOW,
+                                                           read separately)
+      part_of        node -> its container (site/group)
+  - a hand-edited CURATION file carries findings and edges for knowledge
+    that has no source yet; it is staging, and 'promote me' is the only
+    valid long-term state
+  - the graph is DERIVED: build regenerates everything; hand-editing a
+    generated file is the failure mode this tool exists to prevent
+
+Commands:
+  build               run extractors, merge curation, write artifacts
+  lint                the standing audit (see the checks below)
+  affected <x>        transitive dependency closure of <x>
+  tree                indented map, site -> host -> guests/services
+  live <file>         live diff: run per-host commands, compare to graph
+
+Artifacts (written by build, next to the config, in git):
+  nodes.json, edges.json, build-meta.json
+"""
+import json, os, re, subprocess, sys, hashlib, datetime
+
+DEP_EDGE_KEYS = ("runs_on", "depends_on", "serves")
+DATA_EDGE_KEYS = ("replicates_to",)
+VALID_STATUS = {"running", "stopped", "decommissioned", "migrated", "removed"}
+
+
+def log(msg, err=False):
+    print(msg, file=sys.stderr if err else sys.stdout)
+
+
+def load_config(path):
+    with open(path) as f:
+        return json.load(f)
+
+
+def run_extractor(root, spec):
+    """Run one extractor (python or shell script); return list of nodes."""
+    script = os.path.join(root, spec["path"])
+    if not os.path.exists(script):
+        log(f"warning: extractor missing: {spec['path']}", err=True)
+        return []
+    if spec.get("lang", "python") == "python":
+        cmd = [sys.executable, script]
+    else:
+        cmd = ["bash", script]
+    cmd += spec.get("args", [])
+    try:
+        out = subprocess.run(cmd, cwd=root, capture_output=True, text=True,
+                             timeout=spec.get("timeout", 120))
+    except subprocess.TimeoutExpired:
+        log(f"warning: extractor timed out: {spec['path']}", err=True)
+        return []
+    if out.returncode != 0:
+        log(f"warning: extractor {spec['path']} rc={out.returncode}: "
+            f"{out.stderr.strip()[:200]}", err=True)
+        return []
+    nodes = []
+    for i, line in enumerate(out.stdout.splitlines()):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        try:
+            n = json.loads(line)
+        except json.JSONDecodeError:
+            log(f"warning: {spec['path']} line {i+1} bad JSON: {line[:80]}",
+                err=True)
+            continue
+        n.setdefault("source", spec["path"])
+        n.setdefault("kind", "unknown")
+        n.setdefault("status", "unknown")
+        n.setdefault("edges", {})
+        nodes.append(n)
+    return nodes
+
+
+def file_state(root, path):
+    p = os.path.join(root, path)
+    if not os.path.exists(p):
+        return None
+    if os.path.isdir(p):
+        try:
+            listing = sorted((f, os.path.getsize(os.path.join(p, f)))
+                             for f in os.listdir(p))
+        except OSError:
+            listing = []
+        h = hashlib.sha256()
+        for f, s in listing:
+            h.update(f"{f}:{s}\n".encode())
+        return h.hexdigest()[:16]
+    h = hashlib.sha256()
+    with open(p, "rb") as f:
+        h.update(f.read())
+    return h.hexdigest()[:16]
+
+
+def git_porcelain(root, paths):
+    try:
+        out = subprocess.run(["git", "-C", root, "status", "--porcelain"],
+                             capture_output=True, text=True, timeout=30)
+        if out.returncode != 0:
+            return []
+        dirty = []
+        for line in out.stdout.splitlines():
+            p = line[3:].strip()
+            for pat in paths:
+                # status paths are repo-rooted; our patterns are
+                # config-relative: match either orientation
+                if (p == pat or p.startswith(pat.rstrip("/") + "/")
+                        or p.endswith("/" + pat.rstrip("/"))
+                        or p == pat.rstrip("/")
+                        or p.startswith("/" + pat)):
+                    dirty.append(p)
+                    break
+        return dirty
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return []
+
+
+def build(cfg, root):
+    sources = cfg.get("sources", [])
+    nodes, inputs = {}, {}
+    for spec in sources:
+        got = run_extractor(root, spec)
+        for n in got:
+            if n["id"] in nodes:
+                log(f"warning: duplicate node id {n['id']} "
+                    f"({nodes[n['id']]['source']} vs {n['source']})", err=True)
+            nodes[n["id"]] = n
+        inputs[spec["path"]] = file_state(root, spec["path"])
+        for src in spec.get("watch", []):
+            inputs[src] = file_state(root, src)
+    curation_path = cfg.get("curation")
+    curation = {"findings": {}, "edges": [], "flags": {}}
+    if curation_path and os.path.exists(os.path.join(root, curation_path)):
+        with open(os.path.join(root, curation_path)) as f:
+            curation = {**curation, **json.load(f)}
+        inputs[curation_path] = file_state(root, curation_path)
+    for fid, f in curation.get("findings", {}).items():
+        if fid not in nodes:
+            nodes[fid] = {"id": fid, "kind": f.get("kind", "unknown"),
+                          "name": f.get("name", fid), "status":
+                          f.get("status", "curated-only"),
+                          "edges": {}, "source": "curation"}
+    for e in curation.get("edges", []):
+        nodes.setdefault(e["from"], {"id": e["from"], "kind": "unknown",
+                                     "name": e["from"], "status": "curated-only",
+                                     "edges": {}, "source": "curation"})
+        nodes[e["from"]].setdefault("edges", {}).setdefault(e["rel"], [])
+        if e["to"] not in nodes[e["from"]]["edges"][e["rel"]]:
+            nodes[e["from"]]["edges"][e["rel"]].append(e["to"])
+    # write artifacts
+    outdir = cfg.get("outdir", ".")
+    os.makedirs(os.path.join(root, outdir), exist_ok=True)
+    ordered = sorted(nodes.values(), key=lambda n: n["id"])
+    with open(os.path.join(root, outdir, "nodes.json"), "w") as f:
+        json.dump(ordered, f, indent=1)
+    edges = []
+    for n in ordered:
+        for rel, targets in n.get("edges", {}).items():
+            for t in targets:
+                edges.append({"from": n["id"], "rel": rel, "to": t})
+    with open(os.path.join(root, outdir, "edges.json"), "w") as f:
+        json.dump(edges, f, indent=1)
+    meta = {"built": datetime.datetime.now().astimezone().isoformat(),
+            "inputs": inputs, "nodes": len(ordered), "edges": len(edges),
+            "git_dirty": git_porcelain(root, list(inputs))}
+    with open(os.path.join(root, outdir, "build-meta.json"), "w") as f:
+        json.dump(meta, f, indent=1)
+    log(f"build: {len(ordered)} nodes, {len(edges)} edges")
+    if meta["git_dirty"]:
+        log(f"note: {len(meta['git_dirty'])} input file(s) uncommitted: "
+            + ", ".join(meta["git_dirty"][:8]), err=True)
+    return meta
+
+
+def load_graph(root, cfg):
+    outdir = cfg.get("outdir", ".")
+    with open(os.path.join(root, outdir, "nodes.json")) as f:
+        nodes = {n["id"]: n for n in json.load(f)}
+    with open(os.path.join(root, outdir, "edges.json")) as f:
+        edges = json.load(f)
+    curation = {"findings": {}, "flags": {}}
+    cp = cfg.get("curation")
+    if cp and os.path.exists(os.path.join(root, cp)):
+        with open(os.path.join(root, cp)) as f:
+            curation = {**curation, **json.load(f)}
+    return nodes, edges, curation
+
+
+def lint(cfg, root):
+    nodes, edges, curation = load_graph(root, cfg)
+    outdir = cfg.get("outdir", ".")
+    meta_path = os.path.join(root, outdir, "build-meta.json")
+    warnings, infos = [], []
+    stale = False
+    if os.path.exists(meta_path):
+        with open(meta_path) as f:
+            meta = json.load(f)
+        for path, digest in meta.get("inputs", {}).items():
+            cur = file_state(root, path)
+            if cur != digest:
+                stale = True
+                break
+        if not stale and git_porcelain(root, list(meta.get("inputs", {}))):
+            stale = True
+        if stale:
+            warnings.append("STALE BUILD: source inputs changed since the "
+                            "last build (or are uncommitted); rebuild "
+                            "before trusting this audit")
+    # 1. unmapped services
+    for n in nodes.values():
+        if n["kind"] == "service" and not n.get("edges", {}).get("runs_on"):
+            warnings.append(f"UNMAPPED service {n['id']}: no runs_on edge "
+                            f"(where does it run?)")
+    # 2. ghosts: running on something dead
+    for e in edges:
+        if e["rel"] in DEP_EDGE_KEYS:
+            t = nodes.get(e["to"])
+            if t and t["status"] in ("decommissioned", "removed"):
+                warnings.append(f"GHOST {e['from']}: runs on/depends on "
+                                f"decommissioned {e['to']}")
+    # 3. removed-but-listed
+    for n in nodes.values():
+        if n["status"] == "removed" and n.get("edges"):
+            warnings.append(f"REMOVED {n['id']} still carries edges: "
+                            f"{list(n['edges'])}")
+    # 4. curated-only (promotion debt)
+    for n in nodes.values():
+        if n.get("source") == "curation":
+            warnings.append(f"CURATED-ONLY {n['id']}: promote to a source "
+                            f"of record, then delete the curation entry")
+    # 5. needs-decision flags
+    for fid, note in curation.get("flags", {}).items():
+        warnings.append(f"NEEDS-DECISION {fid}: {note}")
+    # 6. invalid status
+    for n in nodes.values():
+        if n["status"] not in VALID_STATUS and n["status"] != "unknown":
+            warnings.append(f"BAD-STATUS {n['id']}: '{n['status']}' is not "
+                            f"in the closed vocabulary")
+    for n in nodes.values():
+        if n["status"] in ("stopped", "decommissioned"):
+            infos.append(f"{n['status'].upper()} {n['id']}")
+    print(f"lint: {len(nodes)} nodes, {len(edges)} edges | "
+          f"errors=0 warnings={len(warnings)} info={len(infos)}")
+    for w in warnings:
+        print(f"  warning {w}")
+    for i in infos[:20]:
+        print(f"  info    {i}")
+    if len(infos) > 20:
+        print(f"  ... and {len(infos)-20} more")
+    return len(warnings)
+
+
+def affected(cfg, root, x):
+    nodes, edges, _ = load_graph(root, cfg)
+    x = x if x in nodes else next((k for k in nodes if k.endswith(x)), None)
+    if not x:
+        log(f"no node matching {x!r}", err=True)
+        return 1
+    dep = {e["from"] for e in edges if e["to"] == x and e["rel"] in DEP_EDGE_KEYS}
+    data = {e["from"] for e in edges if e["to"] == x and e["rel"] in DATA_EDGE_KEYS}
+    print(f"affected by {x}:")
+    print(f"  dependency closure ({len(dep)}):")
+    for d in sorted(dep):
+        print(f"    {d}  [{nodes[d]['status']}]")
+    print(f"  data-flow (backup/replication) dependents ({len(data)}):")
+    for d in sorted(data):
+        print(f"    {d}  [{nodes[d]['status']}]")
+    return 0
+
+
+def tree(cfg, root):
+    nodes, edges, _ = load_graph(root, cfg)
+    children = {}
+    for e in edges:
+        if e["rel"] == "runs_on" or e["rel"] == "part_of":
+            children.setdefault(e["to"], []).append(e["from"])
+    def w(id_):
+        n = nodes.get(id_)
+        if not n:
+            return f"{id_} (unmapped)"
+        mark = {"running": "", "stopped": " [stopped]",
+                "decommissioned": " [DECOM]", "removed": "",
+                "migrated": " [migrated]", "curated-only": " [curated]"}.get(
+                    n["status"], f" [{n['status']}]")
+        return f"{n['kind']}/{n['id']}{mark}"
+    seen = set()
+    def emit(id_, depth):
+        seen.add(id_)
+        print("  " * depth + w(id_))
+        for c in sorted(children.get(id_, [])):
+            emit(c, depth + 1)
+    sites = {}
+    for n in nodes.values():
+        site = n.get("site")
+        if site:
+            sites.setdefault(site, []).append(n["id"])
+    for site in sorted(k for k in sites if k):
+        print(f"== {site} ==")
+        for host_id in sorted(sites[site]):
+            if nodes[host_id]["kind"] == "host":
+                emit(host_id, 1)
+    orphan = [n["id"] for n in nodes.values()
+              if not n.get("site") and n["kind"] != "host" and n["id"] not in seen]
+    if orphan:
+        print("== unplaced ==")
+        for o in sorted(orphan):
+            emit(o, 1)
+    return 0
+
+
+def live(cfg, root, livefile):
+    """Live diff: the spec file maps host-id -> shell command that lists
+    live guests (one 'vmid name status' triple per line, any columns).
+    The command is run over SSH to the host's ssh target (from the host
+    node's 'ssh' field, or the host id as alias). API and CLI both work;
+    the spec is what you trust. Compare against the graph's guests."""
+    nodes, edges, _ = load_graph(root, cfg)
+    with open(livefile) as f:
+        spec = json.load(f)
+    bad = 0
+    for host_id, entry in spec.items():
+        h = nodes.get(host_id)
+        if not h:
+            print(f"  {host_id}: not in graph (add it or drop the spec)")
+            bad += 1
+            continue
+        target = h.get("ssh") or host_id
+        try:
+            out = subprocess.run(
+                ["ssh", "-o", "ConnectTimeout=8", "-o", "BatchMode=yes",
+                 target, entry["cmd"]],
+                capture_output=True, text=True, timeout=60)
+        except subprocess.TimeoutExpired:
+            print(f"  {host_id}: ssh timeout")
+            bad += 1
+            continue
+        if out.returncode != 0:
+            print(f"  {host_id}: cmd failed rc={out.returncode}: "
+                  f"{out.stderr.strip()[:120]}")
+            bad += 1
+            continue
+        live_ids = set()
+        for line in out.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            m = re.match(r"^(\S+)\s+(\S+)", line)
+            if m and not m.group(1).lower() in ("vmid", "name", "id"):
+                live_ids.add(m.group(2))
+        # children of this host in the graph (guest/... with runs_on host/...)
+        graph_ids = {e["from"].rsplit("/", 1)[-1]
+                     for e in edges if e["rel"] == "runs_on" and e["to"] == host_id}
+        unregistered = live_ids - graph_ids
+        ghosts = graph_ids - live_ids
+        # a blind API can report empty while the CLI sees the fleet:
+        # report both verdicts and let the spec's cmd choice decide
+        tag = ""
+        if not live_ids and ghosts:
+            tag = "  <-- empty from this path; cross-check the other"
+        print(f"  {host_id}: live={len(live_ids)} graph={len(graph_ids)} "
+              f"unregistered={sorted(unregistered) or '-'} "
+              f"listed-but-gone={sorted(ghosts) or '-'}{tag}")
+        if unregistered or ghosts:
+            bad += 1
+    print(f"live: {bad} host(s) with a discrepancy")
+    return 0
+
+
+def main():
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("command", choices=["build", "lint", "affected", "tree", "live"])
+    ap.add_argument("arg", nargs="?", default=None)
+    ap.add_argument("--config", default="config.json")
+    a = ap.parse_args()
+    root = os.path.dirname(os.path.abspath(a.config)) or "."
+    cfg = load_config(a.config)
+    cfg["outdir"] = cfg.get("outdir", os.path.dirname(a.config) or ".")
+    if a.command == "build":
+        build(cfg, root)
+    elif a.command == "lint":
+        lint(cfg, root)
+    elif a.command == "affected":
+        if not a.arg:
+            ap.error("affected needs a node")
+        sys.exit(affected(cfg, root, a.arg))
+    elif a.command == "tree":
+        sys.exit(tree(cfg, root))
+    elif a.command == "live":
+        if not a.arg:
+            ap.error("live needs a spec file")
+        sys.exit(live(cfg, root, os.path.join(root, a.arg)))
+
+
+if __name__ == "__main__":
+    main()

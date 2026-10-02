@@ -1,0 +1,23 @@
+{
+  "findings": {
+    "service/auth": {
+      "kind": "service",
+      "name": "auth",
+      "status": "running",
+      "site": "offsite"
+    },
+    "host/gamma": {
+      "kind": "host",
+      "name": "gamma",
+      "status": "running",
+      "site": "offsite"
+    }
+  },
+  "edges": [
+    {"from": "service/auth", "rel": "runs_on", "to": "host/beta"},
+    {"from": "service/media", "rel": "runs_on", "to": "host/alpha"}
+  ],
+  "flags": {
+    "host/alpha": "alpha's second disk is degraded; decide: replace or accept"
+  }
+}
