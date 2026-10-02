@@ -1,6 +1,6 @@
 # Agent Security: Threat Model for Autonomous Agents on Your Network
 
-**Status:** Work in progress — this is a recurring topic that will be updated as we learn more.
+**Status:** Work in progress; this is a recurring topic that will be updated as we learn more.
 
 ## Threat Model
 

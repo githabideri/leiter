@@ -100,7 +100,7 @@ The Proxmox host sits within a larger home lab infrastructure:
 ### Model Strategy
 - **CPU models:** 4-8B dense models, or MoE with <5B active params (expect 7-12 tokens/sec for A3B-class models)
 - **GPU models:** Larger models or whatever fits on VRAM pool when GPU server activated
-- **Preference:** MoE (Mixture of Experts) for large models — faster, more efficient
+- **Preference:** MoE (Mixture of Experts) for large models: faster and more efficient
 - **Quantization:** Q4_K_M to Q5_K_M balance (size vs quality)
 - **Spectrum:** From sub-1B models (Raspberry Pi) to 50-60GB RAM models (this hardware)
 
@@ -152,7 +152,7 @@ While this guide focuses on Proxmox, the concepts apply to:
 - **Gaming PC:** Full GPU acceleration, larger models
 - **Dedicated Server:** 24/7 GPU operation if cooling/power permit
 
-**Key insight:** Proxmox is not mandatory — results are transferable to any Linux setup. The advantage is testing multiple harnesses in isolated LXC/VM environments without affecting the host, clean separation for llama.cpp and other service LXCs, backup integration, and the ability to clone and snapshot.
+**Key insight:** Proxmox is not mandatory; results are transferable to any Linux setup. The advantage is testing multiple harnesses in isolated LXC/VM environments without affecting the host, clean separation for llama.cpp and other service LXCs, backup integration, and the ability to clone and snapshot.
 
 ## Version Information
 
@@ -161,4 +161,4 @@ While this guide focuses on Proxmox, the concepts apply to:
 
 ---
 
-*A growing document — expect changes and improvements!*
+*A growing document: expect changes and improvements!*
