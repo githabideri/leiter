@@ -7,6 +7,7 @@ The conceptual and practice layer of leiter. Index:
 | [domain-model.md](domain-model.md) | The estate **ontology**: the kinds of things a homelab is made of (site, host, guest, service, skill, tool, repo, logflow…), the relations between them, and the invariants that keep the model honest. The shared vocabulary everything else in this repo (and the private instances that use it) speaks. | stable |
 | [overlay-contract.md](overlay-contract.md) | The public/private **split**: shape in the public repo (with `@@TOKEN@@` placeholders), values in your private repo, joined at deploy time. The mechanism that makes publishing a homelab's knowledge safe. | stable |
 | [practice/](practice/README.md) | Operating doctrine: documentation-as-state, the component-graph discipline (staleness audit, blast radius), session & memory discipline, secret handling, change governance. | growing |
+| [guides/](guides/README.md) | Step-shaped, human-facing build guides: an agentic AI stack on small hardware (the reference machine, the design principles, the model strategy) and the agent threat model (segmentation, per-agent-type measures, standing best practice). Salvaged from a retired project's repo; machine names generalized to roles. | growing |
 
 ## Conventions
 

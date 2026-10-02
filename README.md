@@ -57,7 +57,8 @@ leiter/
 │   ├── README.md      ← index
 │   ├── domain-model.md← the estate ontology: kinds, relations, invariants
 │   ├── overlay-contract.md
-│   └── practice/      ← layer 2: operating doctrine (grows here)
+│   ├── practice/      ← layer 2: operating doctrine (grows here)
+│   └── guides/        ← step-shaped build guides (human-facing; the agent-on-small-box shape)
 └── scripts/
     └── sanitize-sweep.sh  ← the pre-push leak guard
 ```
