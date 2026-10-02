@@ -3,11 +3,11 @@ name: encrypted-backup
 description: >
   Set up and operate backups of data that the operator must not be able
   to read (a third party's photos, a partner's archive, a client's
-  files): the two trust patterns — an E2E-encrypted repo (the operator
+  files): the two trust patterns, an E2E-encrypted repo (the operator
   runs the server and the storage, the data owner holds the only
   passphrase; reference implementation Kopia) and a physical carrier
   drive (a plain copy that only ever grows, never deletes, travels
-  with completion markers, and is handed back) — plus the operating
+  with completion markers, and is handed back), plus the operating
   discipline for multi-day, multi-terabyte copies: the sync in its own
   detached session, heartbeat lines because progress output dies
   silently, a stall detector on the log, idempotent restart, a
@@ -135,7 +135,7 @@ is where they live or die:
    anything starts, which is the property that makes "the host
    rebooted at 3am" a non-event;
 5. **notifications dedup with a state file keyed `event:target`,
-   storing the last-send timestamp** — and the guard compares
+   storing the last-send timestamp**, and the guard compares
    *presence/epoch*, never "have I sent to a target named X" as a
    boolean that a different code path forgets to set. A dedup bug
    here does not lose data; it loses the operator's trust in the

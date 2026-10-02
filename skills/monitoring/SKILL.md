@@ -101,7 +101,7 @@ jobs.
 
 The contract has one sharp edge: a metric family that renames itself
 (upstream version bump) between a recording rule and a dashboard
-panel breaks *silently* — the target is up, the scrape is green, the
+panel breaks *silently*: the target is up, the scrape is green, the
 panel is empty. The verification script's job-list of expected metric
 families is what turns that silent break into a loud one.
 

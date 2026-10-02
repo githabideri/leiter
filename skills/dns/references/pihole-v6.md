@@ -41,11 +41,11 @@ sync layer deliberately, don't mask it.
 
 ## Reading state
 
-- `cat /etc/pihole/hosts/custom.list` — the generated mirror (fine for
+- `cat /etc/pihole/hosts/custom.list`: the generated mirror (fine for
   reading; the toml is the truth for writing)
-- `cat /etc/pihole/dnsmasq.conf` — upstream DNS, range, leases
-- `cat /etc/pihole/dhcp.leases` — who is currently where
-- `pihole -v`, `pihole -t`, `pihole -q <domain>` — version, query log,
+- `cat /etc/pihole/dnsmasq.conf`: upstream DNS, range, leases
+- `cat /etc/pihole/dhcp.leases`: who is currently where
+- `pihole -v`, `pihole -t`, `pihole -q <domain>`: version, query log,
   resolution test
 
 ## Removing a record

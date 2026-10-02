@@ -22,21 +22,21 @@ command.)
 
 ## input commands and their sharp edges
 
-- `input tap x y` — a short synthetic tap. **Some system dialogs
+- `input tap x y`: a short synthetic tap. **Some system dialogs
   silently ignore these** (observed: the backup-restore
   confirmation window on a hardened build). The working substitute is
   a short press at the same coordinates: `input swipe x y x y 600`
   (the last argument is the duration in ms). "My tap does nothing"
   has two causes: wrong coordinates (fix with the dump), or a
   dialog that needs a press (fix with the duration).
-- `input text` — types characters; it does not send Enter, and it
+- `input text`: types characters; it does not send Enter, and it
   mangles spaces and some punctuation (quote and escape per call).
   For real text entry, the keyboard (an `input text` per field is
   fine for short values; long or special text may need key events or
   the IME).
-- `input keyevent` — the standard key codes (home, back, power,
+- `input keyevent`: the standard key codes (home, back, power,
   volume, enter).
-- `input swipe x1 y1 x2 y2 ms` — a drag with a duration; the basic
+- `input swipe x1 y1 x2 y2 ms`: a drag with a duration; the basic
   tool for launcher rearrangement (see the drag patterns below) and
   for the "press instead of tap" trick above.
 - key combinations are sequences of keyevents; there is no

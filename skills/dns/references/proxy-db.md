@@ -9,7 +9,7 @@ Inside the `nginx-proxy-manager` container:
 
 | Artifact | Location |
 |---|---|
-| the DB (the declaration) | `/data/database.sqlite` — tables `proxy_host` / `redirection_host` (with JSON `domain_names`, `created_on`/`modified_on`) and `certificate` |
+| the DB (the declaration) | `/data/database.sqlite`: tables `proxy_host` / `redirection_host` (with JSON `domain_names`, `created_on`/`modified_on`) and `certificate` |
 | the rendered configs | `/data/nginx/proxy_host/<id>.conf`, `/data/nginx/redirection_host/<id>.conf` |
 | the reload | `nginx -s reload` |
 

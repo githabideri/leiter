@@ -56,6 +56,30 @@ if [ "${1:-}" != "" ]; then
   done
 fi
 
+# style floor: the em dash (U+2014). Zero tolerated anywhere except the
+# quoted tight word-join example that displays the tell in the klartext
+# gamut. (grep -P is locale-fragile for multibyte; python is the reliable
+# witness.) The sweep script itself is excluded: it carries the pattern.
+if EMDASH=$(git ls-files -z | xargs -0 -r python3 -c '
+import sys
+bad = []
+for p in sys.argv[1:]:
+    try:
+        t = open(p, encoding="utf8").read()
+    except (UnicodeDecodeError, OSError):
+        continue
+    if "\u2014" in t and "references/gamut" not in p and "sanitize-sweep" not in p:
+        for i, line in enumerate(t.split("\n"), 1):
+            if "\u2014" in line:
+                bad.append(f"{p}:{i}")
+if bad:
+    print("\n".join(bad[:20]))
+' 2>/dev/null) && [ -n "$EMDASH" ]; then
+  echo "== STYLE: em dashes outside the gamut example (klartext: zero by default)"
+  echo "$EMDASH"
+  FAIL=1
+fi
+
 if [ "$FAIL" = 0 ]; then
   echo "sanitize-sweep: clean (0 hits across ${#PATTERNS[@]} patterns)"
   exit 0

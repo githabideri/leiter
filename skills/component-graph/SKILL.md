@@ -34,13 +34,13 @@ You bring: the sources of record your estate already has (an
 inventory, per-service docs, a skills directory, whatever), and the
 willingness to keep the graph *derived*. The skill contains:
 
-- `scripts/component-graph` — the starter tool (standard-library
+- `scripts/component-graph`: the starter tool (standard-library
   Python, one file): `build`, `lint`, `affected <x>`, `tree`,
   `live <spec>`;
-- `examples/` — a runnable miniature estate (an inventory table, two
+- `examples/`: a runnable miniature estate (an inventory table, two
   service directories, a curation file, a config) so the whole loop
   works out of the box;
-- `references/live-diff.md` — the paper-audit's sibling: diffing the
+- `references/live-diff.md`: the paper-audit's sibling, diffing the
   graph against what the hosts actually run.
 
 ## How the tool is shaped (and why)
