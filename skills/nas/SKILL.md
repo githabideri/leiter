@@ -1,23 +1,18 @@
 ---
 name: nas
 description: >
-  Operate ZFS NAS boxes: TrueNAS SCALE appliances and bare ZFS hosts
-  (a Proxmox box that doubles as the NAS): pools, datasets and quotas;
-  NFS shares via the midclt API on appliances (the 24.10+ namespace
-  renames included) and via an explicit /etc/exports on bare hosts;
-  dataset copies between boxes with zfs send/recv: full streams,
-  incremental deltas, resumable pipes, and the encryption interactions
-  that silently break them. Covers the gotchas that bite live: hidden
-  root_squash (verify with exportfs -s, not /etc/exports), the FreeBSD
-  versus OpenZFS CLI differences, readonly root dataset, tiny-NAS-RAM OOM
-  kills, degraded single-leg mirrors, and the three-part completion
-  check. Use for "create an NFS share", "copy this dataset to the other
-  box", "why do NFS writes give EACCES", "my zfs send died", "set a
-  quota", "is this pool still redundant", "how fresh is this mirror".
-  Not for: where the estate's NAS boxes live (instance knowledge, not
-  this skill), non-ZFS NAS systems (Synology/DSM is a different family),
-  or the backup software that consumes the shares (that skill owns its
-  own side).
+  Operate ZFS NAS boxes: TrueNAS SCALE appliances and bare ZFS hosts (a Proxmox box that
+  doubles as NAS): pools, datasets, quotas; NFS shares via the midclt API on appliances
+  (24.10+ namespace renames included) or an explicit /etc/exports on bare hosts; OS
+  updates via the update.* API (maintenance hops, train jumps, the major-jump pattern);
+  dataset copies with zfs send/recv (full streams, incremental deltas, resumable pipes,
+  the encryption interactions that silently break them). Gotchas: hidden root_squash
+  (verify with exportfs -s), FreeBSD vs OpenZFS CLI differences, readonly root dataset,
+  tiny-NAS-RAM OOM kills, degraded single-leg mirrors, the three-part completion check.
+  Use for "create an NFS share", "copy this dataset to the other box", "why do NFS writes
+  give EACCES", "my zfs send died", "set a quota", "upgrade this NAS", "is this pool still
+  redundant". Not for: where the estate's boxes live (instance knowledge), non-ZFS
+  systems, or the backup software consuming the shares.
 ---
 
 # NAS (TrueNAS SCALE + ZFS)

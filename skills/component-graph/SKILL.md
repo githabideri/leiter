@@ -1,27 +1,18 @@
 ---
 name: component-graph
 description: >
-  Keep a machine-readable map of the whole estate (sites, hosts, guests,
-  services, skills, tools, repos) derived from its sources of record,
-  and use it for the three jobs a fuzzy mental map cannot do: the
-  standing staleness audit (unmapped services, ghosts on dead hosts,
-  removed-but-listed, curation debt, needs-decision queue), blast
-  radius ("if I change X, what breaks", with backup/replication edges
-  read as data flow, not dependency), and onboarding (read the model
-  instead of doing archaeology). The discipline that makes it work:
-  the graph is a derived artifact, never a source of truth; status is a
-  closed vocabulary and the status column outranks prose; historical
-  tables are marked (re-homing markers), not deleted; the linter
-  advises and never blocks; a stale build labels itself; curation is a
-  staging layer whose debt is visible. Includes a working starter tool
-  (build/lint/affected/tree/live over normalized JSONL from per-source
-  extractors, with a runnable example estate). Use for "build a
-  component map", "audit my inventory for drift", "what depends on X",
-  "which of my docs are ghosts", "onboard a new person/agent to the
-  estate". The companion doctrine is
-  ../../docs/practice/component-graph.md. Not for: monitoring the
-  estate at runtime (that is the monitoring skill), or service
-  operations (their own skills).
+  Keep a machine-readable map of the estate (sites, hosts, guests, services, skills,
+  tools, repos) derived from the sources of record: the staleness audit (unmapped
+  services, ghosts on dead hosts, removed-but-listed, curation debt, needs-decision),
+  blast radius ("if I change X, what breaks"; backup edges read as data flow, not
+  dependency), and onboarding. Discipline: the graph is a derived artifact, never a source
+  of truth; status is a closed vocabulary and outranks prose; old rows are marked, not
+  deleted; the linter advises and never blocks; a stale build labels itself. Includes a
+  starter tool (build/lint/affected/tree/live over normalized JSONL). Use for "build a
+  component map", "audit my inventory for drift", "what depends on X", "which of my docs
+  are ghosts", "onboard a new person/agent to the estate". Companion doctrine:
+  docs/practice/component-graph.md. Not for: runtime monitoring (the monitoring skill) or
+  service operations (their own skills).
 ---
 
 # Component graph

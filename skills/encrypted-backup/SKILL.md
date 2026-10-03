@@ -1,24 +1,18 @@
 ---
 name: encrypted-backup
 description: >
-  Set up and operate backups of data that the operator must not be able
-  to read (a third party's photos, a partner's archive, a client's
-  files): the two trust patterns, an E2E-encrypted repo (the operator
-  runs the server and the storage, the data owner holds the only
-  passphrase; reference implementation Kopia) and a physical carrier
-  drive (a plain copy that only ever grows, never deletes, travels
-  with completion markers, and is handed back), plus the operating
-  discipline for multi-day, multi-terabyte copies: the sync in its own
-  detached session, heartbeat lines because progress output dies
-  silently, a stall detector on the log, idempotent restart, a
-  power-cycled host, and notification dedup that doesn't re-send
-  forever. Use for "back up <person>'s data without being able to read
-  it", "set up a Kopia server/clients", "run the big copy to the USB
-  drive", "the backup has been silent for hours", "hand the drive back
-  to the owner", "why did I get the same notification eleven days in
-  a row". Not for: the operator's own backups (those can be
-  unencrypted and simpler), or the hypervisor/backup-server backup
-  duties of a monitored stack (that skill owns its own chain).
+  Set up and operate backups of data the operator must not be able to read (a third
+  party's photos, a partner's archive, a client's files): the two trust patterns — an
+  E2E-encrypted repo (the operator runs server and storage, the data owner holds the only
+  passphrase; reference: Kopia) and a physical carrier drive (a copy that only ever grows,
+  never deletes, travels with completion markers) — plus the discipline for multi-day,
+  multi-terabyte copies: sync in its own detached session, heartbeat lines (progress
+  output dies silently), a stall detector on the log, idempotent restart, a power-cycled
+  host, notification dedup. Use for "back up <person>'s data without being able to read
+  it", "set up a Kopia server/clients", "run the big copy to the USB drive", "the backup
+  has been silent for hours", "hand the drive back to the owner", "why did the same
+  notification re-send forever". Not for: the operator's own backups (unencrypted and
+  simpler) or a monitored stack's backup-server duties (that skill owns its own chain).
 ---
 
 # Encrypted backup of a third party's data
