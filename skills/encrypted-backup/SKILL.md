@@ -2,10 +2,10 @@
 name: encrypted-backup
 description: >
   Set up and operate backups of data the operator must not be able to read (a third
-  party's photos, a partner's archive, a client's files): the two trust patterns — an
+  party's photos, a partner's archive, a client's files): the two trust patterns - an
   E2E-encrypted repo (the operator runs server and storage, the data owner holds the only
   passphrase; reference: Kopia) and a physical carrier drive (a copy that only ever grows,
-  never deletes, travels with completion markers) — plus the discipline for multi-day,
+  never deletes, travels with completion markers) - plus the discipline for multi-day,
   multi-terabyte copies: sync in its own detached session, heartbeat lines (progress
   output dies silently), a stall detector on the log, idempotent restart, a power-cycled
   host, notification dedup. Use for "back up <person>'s data without being able to read

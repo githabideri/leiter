@@ -101,19 +101,19 @@ submitted one.
 boots is decided by up to three layers, and fixing only some of them
 wastes a reboot**. Before you reboot, line them all up:
 
-1. **The pin file** — `/etc/kernel/proxmox-boot-pin` holds the *desired*
+1. **The pin file** - `/etc/kernel/proxmox-boot-pin` holds the *desired*
    kernel. `proxmox-boot-tool kernel pin <ver>` writes it; `proxmox-boot-tool
    refresh` (re)copies the pinned/installed kernels onto the ESP. The pin is
    intent only: nothing re-reads it at boot, so a host can sit pinned at an
    old kernel for months and silently miss every patch release.
-2. **The ESP per-kernel layout** — `\EFI\proxmox\<ver>\` directories and
+2. **The ESP per-kernel layout** - `\EFI\proxmox\<ver>\` directories and
    loader entries, (re)created by `refresh`.
-3. **The firmware's actual boot path** — check it: `efibootmgr -v`.
+3. **The firmware's actual boot path** - check it: `efibootmgr -v`.
    - If BootCurrent/BootOrder points at `\EFI\systemd\systemd-bootx64.efi`
      ("Linux Boot Manager"), the ESP's `/loader/loader.conf` is the
      authority: its `default <entry>.conf` line picks the kernel, and
      **proxmox-boot-tool does not update that line**. The ESP is often not
-     mounted in fstab on PVE hosts — mount it, edit
+     mounted in fstab on PVE hosts - mount it, edit
      `default proxmox-<ver>-pve.conf`, and verify the entry file exists in
      `/loader/entries/`.
    - If BootOrder points at per-kernel NVRAM entries instead, make sure the
@@ -126,11 +126,11 @@ wastes a reboot**. Before you reboot, line them all up:
    Which world you're in: `cat /sys/firmware/efi/fw_platform` (`efi` vs
    `BIOS`).
 
-After the reboot, verify with `uname -r` — never the pin file. Two more
+After the reboot, verify with `uname -r` - never the pin file. Two more
 PVE 9 quirks: `pve-shutdown` was removed (use `shutdown -r now`), and a
 reboot whose stop-phase times out (e.g. a guest in D state) makes PVE
 record the still-running guests as *user-stopped*, so they are silently
-skipped at the next boot — check `pct list | grep -v running` after any
+skipped at the next boot - check `pct list | grep -v running` after any
 forced reboot and start the onboot ones manually. Guests that mount NFS
 from a box you're about to reboot should use `nofail`/`x-systemd.automount`
 or they can hang at boot until the export comes back.
