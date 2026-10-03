@@ -27,7 +27,9 @@ willingness to keep the graph *derived*. The skill contains:
 
 - `scripts/component-graph`: the starter tool (standard-library
   Python, one file): `build`, `lint`, `affected <x>`, `tree`,
-  `live <spec>`;
+  `live <spec>`; `build` also writes a **machine index**: a generated
+  name → site → role projection other skills and agents read to resolve a
+  machine nickname without opening the full inventory;
 - `examples/`: a runnable miniature estate (an inventory table, two
   service directories, a curation file, a config) so the whole loop
   works out of the box;
