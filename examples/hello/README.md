@@ -1,4 +1,4 @@
-# hello — the worked example
+# hello: the worked example
 
 The minimal case of `docs/overlay-contract.md`: one template
 (`SKILL.md`), one mapping (`mapping.env`), one render target.
