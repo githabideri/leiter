@@ -1,19 +1,7 @@
 ---
 name: keymaster
 description: >-
-  Unlock encrypted boot pools remotely: a small always-on machine holds a
-  LUKS file vault with per-host boot passphrases + a dedicated unlock key,
-  and unlocks headless servers from the initramfs/dropbear stage when they
-  can't reach the running OS. The unlock CLI (per-host registry, unlock one
-  or all, vault open/close, image backup, audit log, login banner),
-  onboarding a new encrypted host (dropbear-initramfs + DHCP reservation +
-  initramfs rebuilds), and the console-typing fallback when the keymaster is
-  itself dead. Use when: "host is in initramfs / won't boot / stuck at the
-  unlock prompt", "rpool", "LUKS passphrase", "key vault", "keymaster",
-  "back up the key vault", a power outage involving encrypted hosts.
-  Machine names: resolved via the estate's machine index (body). A human
-  opens the vault; secrets never print; unlocking is deliberate. Not for:
-  KVM (the kvm skill), monitoring, DNS.
+  "@@KEYMASTER_DESCRIPTION@@"
 ---
 
 # Keymaster: LUKS vault & remote boot-pool unlock
@@ -145,3 +133,11 @@ a host *sitting* in initramfs becomes an alert instead of a surprise.
   powers on**, or the streamer has no stream at all (kvm skill).
 - Small boards typically lack `cpio`/`xxd`; `od` is the universal
   substitute.
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@KEYMASTER_ESTATE@@
