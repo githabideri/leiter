@@ -44,7 +44,12 @@ proves it works end to end.
    (the estate: an ansible role that installs `node_exporter` as its
    own user, idempotent, works in unprivileged containers and regular
    VMs alike). A service that already speaks `/metrics` needs no
-   exporter at all: the scrape job points at the endpoint directly.
+   exporter at all: the scrape job points at the endpoint directly. If
+   the target runs a **declarative OS** (NixOS and kin), the exporter
+   does not come from an imperative installer at all: it is a service
+   declared in the host's own config store (a shared module in the
+   fleet's nix repo), and the central side (the job below) is all that
+   the orchestration tooling does for it.
 3. **Declare the scrape job.** One entry in the Prometheus config
    (target + labels), in the config store, in the same commit as
    anything else that changed. The job is *data* (a target and a
