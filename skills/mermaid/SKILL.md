@@ -1,14 +1,7 @@
 ---
 name: mermaid
 description: >-
-  Design, write, and validate Mermaid diagrams (flowcharts, dependency
-  graphs, service maps) for renderers you do not control (Gitea web UI,
-  Obsidian, markdown hosts): the design contract (one reader question per
-  diagram, shape = kind / colour = state, density by audience, deduped
-  edge labels), the theme-safe palette that survives light and dark host
-  themes, the renderer breaker list, and the validation ladder. Ships
-  `mermaid-check`, an offline breaker lint. For diagrams generated from
-  data files (estate graphs): the component-graph skill.
+  "@@MERMAID_DESCRIPTION@@"
 ---
 
 # Mermaid
@@ -74,3 +67,13 @@ generated file that is committed next to its data).
 | writing/adjusting the init block, choosing palettes or classDefs | `references/theming.md` |
 | a diagram won't parse on a host; version-safe syntax; validation | `references/renderer-compat.md` |
 | offline lint of an existing block or file | `scripts/mermaid-check` |
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@MERMAID_ESTATE@@

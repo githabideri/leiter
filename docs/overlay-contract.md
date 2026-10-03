@@ -74,6 +74,35 @@ So a reader can stand up the whole stack from the public repo against
 *their* machines, and the operator of the estate this came from runs the
 *same* templates with a different mapping file.
 
+## Worked example 2: agent skills
+
+The **leiter** repo runs this contract on its own skills corpus
+(`skills/`). Some skills are *shapes* of capabilities the private
+estate instance owns:
+
+- **Shape** (public, `skills/<name>/`): the behavior, the generic
+  references, the bundled generic scripts. The frontmatter carries
+  `@@<SKILL>_NAME@@` and `@@<SKILL>_DESCRIPTION@@` (quoted, so the raw
+  file stays valid YAML before rendering), and the bottom of the body
+  carries an `@@<SKILL>_ESTATE@@` hook.
+- **Values** (private): the mapping file (name, description per
+  skill) plus a file-backed estate section per overlaid skill (see the
+  multi-line values note under the tool).
+- **Deploy**: the instance's script inlines the estate section into a
+  copy of the shape, then runs `overlay-apply render` with the mapping;
+  the result lands in the instance's *gitignored* skills root. The
+  agent's skill discovery respects `.gitignore`, so one gitignore line
+  hides the raw shape tree and the rendered copy is the only one that
+  loads. The instance may name the skill as it actually calls it
+  (`nas` -> `truenas`) and may carry estate nicknames in the trigger
+description that the public shape must not.
+
+The rendered estate section overrides same-named references from the
+shape; the generic versions stay in the shape's tree. That is shadowing
+as a feature, and the reason an estate never forks a public skill: a
+fix to the shape lands in a public commit and reaches the estate when
+it bumps its pointer.
+
 ## Using it yourself
 
 1. **Pick your token alphabet.** Small and boring beats clever:
@@ -112,6 +141,16 @@ The mapping file is `KEY=value` or `KEY: value` lines (keys with or
 without the `@@` wrappers; `#` comments; the value is everything after
 the first separator, so values may themselves contain `=` or `:`). The
 token grammar is `@@` + uppercase word (`[A-Z][A-Z0-9_]*`) + `@@`.
+
+**Multi-line values.** The mapping format is one line per value. A
+value that is a *document* (a section, not a word) does not fit: keep
+it as a file next to the mapping file, in the same private directory
+tree, and have the instance's deploy script inline it into a working
+copy of the template before `overlay-apply` runs. Short values (names,
+descriptions, addresses) stay in the mapping file itself, so the tool's
+unresolved-token refusal still guards the render: a typo in a token
+name fails loudly instead of leaving a placeholder in the deployed
+file.
 
 Two properties matter more than the rest: **a render never emits
 half-rendered output** (the unresolved-token refusal is the whole safety

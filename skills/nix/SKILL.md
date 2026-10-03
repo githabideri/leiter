@@ -1,17 +1,7 @@
 ---
 name: nix
 description: >-
-  Provision and operate NixOS machines. The proven 2-phase flow (bare
-  metal → headless fleet node: dd'd ISO + hidden payload on one stick,
-  one-time Tailscale authkey, minimal keyboard input, machine-local flake
-  with real secrets), the layout invariants (initial vs full host,
-  host-dir-first import, atomic rebuilds), and building/running non-Nix
-  software on NixOS (CUDA from debs, the stub-ld / ld.so.cache / rpath
-  traps, Pascal legacy_580, the 26.05 module-system crash, branch pins
-  that move on their own). Use for "install NixOS", "provision a node",
-  "nixos-anywhere", "why did my nixos eval crash", "build CUDA or
-  llama.cpp on NixOS", "why does this binary fail on NixOS". Details in
-  references/. Not for: non-NixOS nodes.
+  "@@NIX_DESCRIPTION@@"
 ---
 
 # Nix Skill
@@ -100,3 +90,13 @@ constraint is permanent, not interim.)
 
 - The companion `component-graph` practice tracks which hosts exist;
   this skill makes new ones.
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@NIX_ESTATE@@

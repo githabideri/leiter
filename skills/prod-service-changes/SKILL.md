@@ -1,16 +1,7 @@
 ---
 name: prod-service-changes
-description: >
-  Changing a live production service that other things depend on: the
-  3-zone model (parameters free / supervision plumbing repo-owned /
-  provenance visible), the advisory concurrency registry for shared
-  services, the "weird state" triage (read the machine, zone the anomaly,
-  check for a prior session, recoverability beats cleverness), and the
-  consumer-registry problem by reachability class (A mutate+verify / B
-  report-only / C dead target). Use for: "test model X on <host>", editing
-  a unit or start script, restarting/redeploying a prod service, "service
-  died / won't come back / who is serving". Not for throwaway non-prod
-  runs or observability itself.
+description: >-
+  "@@PROD_SERVICE_CHANGES_DESCRIPTION@@"
 ---
 
 # Prod Service Changes Skill
@@ -118,3 +109,13 @@ from a search into a query.
 - Companion skills: `monitoring` (observability, not change discipline),
   `proxmox` (host/guest lifecycle), `secrets` practice (what may appear in
   drop-ins).
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@PROD_SERVICE_CHANGES_ESTATE@@

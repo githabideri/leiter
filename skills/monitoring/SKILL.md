@@ -1,21 +1,7 @@
 ---
-name: monitoring
-description: >
-  Onboard a host or service into a Prometheus + Grafana stack and keep the
-  onboarding honest: the standard path (a metrics exporter installed by a
-  repeatable role or script, a scrape job declared in your config store
-  with a fixed label contract, then a verification script that proves the
-  whole chain), the auto-discovery family (hypervisor exporters and backup
-  server exporters where new guests and datastores appear by themselves),
-  and the failure shapes: a reinstall that wipes the exporter's
-  credentials (401, then 500), a target that is up but whose metric
-  family changed name (your dashboards just went silent), a job that was
-  never added (the exporter runs, nobody scrapes it). Use for "add
-  <host> to monitoring", "scrape this service's /metrics", "new exporter
-  for <thing>", "why is <dashboard panel> empty", "the target shows down
-  after a reinstall". Not for: designing dashboards (a separate concern
-  with its own discipline), or operating the Prometheus server itself
-  (retention, rules, backups).
+name: "@@MONITORING_NAME@@"
+description: >-
+  "@@MONITORING_DESCRIPTION@@"
 ---
 
 # Monitoring onboarding
@@ -152,3 +138,13 @@ scrape.
 - **Onboarding the exporter twice.** The role is idempotent; a second
   run is a no-op. The manual one-shot is not; keep the installer
   repeatable or the second box teaches the first a lesson.
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@MONITORING_ESTATE@@

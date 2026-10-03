@@ -1,21 +1,7 @@
 ---
-name: android
-description: >
-  Control phones over wireless adb through an overlay network (the
-  estate's fleet runs GrapheneOS; the patterns are AOSP-general): the
-  connect/pair flow and its one big gotcha (the phone publishes a
-  short-lived pairing card and a separate, *rotating* transport port;
-  confusing the two is the entire failure space), screenshots, taps and
-  key events, logs, app install, home-screen automation (uiautomator
-  first, touch injection second, the 600ms-press rule), data and app
-  migration between phones, and a dead-ends document of verified
-  negative knowledge so no session re-explores a path that was already
-  proven dead. Use for "the phone won't connect over adb", "tap this
-  on the phone", "screenshot the phone", "move this app/data to the
-  other phone", "automate the home screen", "why did the connection
-  die". Not for: the device's own OS administration (that is the OS's
-  own tools once you have a shell), or laptops/tablets (different
-  transports, different assumptions).
+name: "@@ANDROID_NAME@@"
+description: >-
+  "@@ANDROID_DESCRIPTION@@"
 ---
 
 # Phones over the network
@@ -148,3 +134,13 @@ It is the difference between a session that spends eight hours
 re-discovering a wall and one that starts past it. When you verify
 something does not work, write it down with the same care as a success;
 it is knowledge, just negative.
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@ANDROID_ESTATE@@

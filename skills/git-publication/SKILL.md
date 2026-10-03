@@ -1,14 +1,7 @@
 ---
 name: git-publication
 description: >-
-  Publish a private git repo to the world: one-shot history sanitization
-  (git-filter-repo), pre-sanitize bundles, the archive-and-rename swap,
-  re-pointing clones. Use for "make repo X public", "sanitize git
-  history", "remove internal identifiers from a repo", "filter-repo",
-  "git bundle backup", "swap the Gitea repo". Covers the mechanics and the
-  footguns (the == > no-op, micro-testing, binary blobs, gc-prune on
-  re-pointed clones); which content counts as internal is the caller's
-  judgment.
+  "@@GIT_PUBLICATION_DESCRIPTION@@"
 ---
 
 # Git Publication Skill
@@ -113,3 +106,13 @@ The mechanics are here; **the judgment of what is internal is the
 caller's**. Each sanitized repo typically gets its own private skill or
 doc listing what its map replaced; the public repo never needs to say
 what it used to say.
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@GIT_PUBLICATION_ESTATE@@

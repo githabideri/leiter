@@ -66,7 +66,7 @@ leiter/
 
 ## Status
 
-The base docs are in; the corpus (16 skills so far) grows by deliberate
+The base docs are in; the corpus (17 skills so far) grows by deliberate
 extraction from the private instance, one piece at a time, each written or
 generalized on purpose. It is curation, so it moves at curation speed.
 The general skills land first.

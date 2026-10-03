@@ -1,20 +1,7 @@
 ---
-name: dns
-description: >
-  Operate the estate's DNS and reverse-proxy layer: the internal
-  authoritative resolver (Pi-hole-class, usually an HA pair), the
-  database-driven reverse proxy (Nginx Proxy Manager-class: proxy hosts,
-  redirects, certs), and the public side (provider zone, long-lived
-  wildcard cert). The two governing rules: know which file is the store
-  and which is generated (editing the generated one gets wiped on the
-  next restart), and a DB change never reaches the wire by itself (DB row
-  + generated config + reload, three steps). Use for "is <domain>
-  resolving", "add an internal DNS record / CNAME / DHCP lease", "expose
-  a service through the proxy", "add or disable a proxy host or
-  redirect", "renew the wildcard cert", "the proxy 404s / 502s", "a
-  record I added is gone". Not for: public zone content policy (a
-  decision, not a tooling task), mail/SPF records (the provider console
-  owns those), or monitoring (the observability skills own alerting).
+name: "@@DNS_NAME@@"
+description: >-
+  "@@DNS_DESCRIPTION@@"
 ---
 
 # DNS + reverse proxy
@@ -155,3 +142,13 @@ half done.
   outage.
 - **The internal/external split-brain.** Resolves inside, 404s outside
   (or the reverse): two planes, two checks, both required.
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@DNS_ESTATE@@

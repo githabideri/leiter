@@ -1,18 +1,7 @@
 ---
-name: nas
-description: >
-  Operate ZFS NAS boxes: TrueNAS SCALE appliances and bare ZFS hosts (a Proxmox box that
-  doubles as NAS): pools, datasets, quotas; NFS shares via the midclt API on appliances
-  (24.10+ namespace renames included) or an explicit /etc/exports on bare hosts; OS
-  updates via the update.* API (maintenance hops, train jumps, the major-jump pattern);
-  dataset copies with zfs send/recv (full streams, incremental deltas, resumable pipes,
-  the encryption interactions that silently break them). Gotchas: hidden root_squash
-  (verify with exportfs -s), FreeBSD vs OpenZFS CLI differences, readonly root dataset,
-  tiny-NAS-RAM OOM kills, degraded single-leg mirrors, the three-part completion check.
-  Use for "create an NFS share", "copy this dataset to the other box", "why do NFS writes
-  give EACCES", "my zfs send died", "set a quota", "upgrade this NAS", "is this pool still
-  redundant". Not for: where the estate's boxes live (instance knowledge), non-ZFS
-  systems, or the backup software consuming the shares.
+name: "@@NAS_NAME@@"
+description: >-
+  "@@NAS_DESCRIPTION@@"
 ---
 
 # NAS (TrueNAS SCALE + ZFS)
@@ -178,3 +167,13 @@ reality, in the order they burn you:
 - pool health: `zpool status` + `smartctl -a` per disk
 - client mount: `mount` output shows `rw`, the expected security
   flavor, the client address
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@NAS_ESTATE@@

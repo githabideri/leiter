@@ -1,17 +1,7 @@
 ---
-name: skill
+name: "@@SKILL_NAME@@"
 description: >-
-  Write a new agent skill well: the open-standard bundle layout
-  (SKILL.md + references/ + scripts/, one canonical location per skill),
-  naming the skill the way the user calls the domain, and the
-  description-as-trigger doctrine: 300-600 chars of user vocabulary, the
-  per-session token budget of the whole corpus (measured, not estimated),
-  the anti-ratchet rule, exclusion pointers to siblings, progressive
-  disclosure into references/ named by knowledge domain, facts vs
-  behavior, and the anti-pattern list. Use for "create a skill", "new
-  skill for X", "my skill never triggers", "the description is too
-  long", "split this skill", "skill conventions". Not for writing
-  skill *content* about a domain (that's the domain skill itself).
+  "@@SKILL_DESCRIPTION@@"
 ---
 
 # Skill (Meta) Skill
@@ -148,3 +138,13 @@ Rules:
 - ❌ `notes.md` / `gotchas.md` as reference names
 - ❌ volatile state (versions, current values) frozen into a reference
 - ❌ name collisions across roots that aren't deliberate shadowing
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@SKILL_ESTATE@@

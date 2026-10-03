@@ -1,15 +1,7 @@
 ---
 name: ha
 description: >-
-  Operate Home Assistant from the command line with a two-scope agent
-  model: a user-scope token for everyday monitoring and device control
-  (lights, scenes, sensors, health) and an admin-scope token for
-  supervisor/backup/Zigbee2MQTT work, with the scope enforced by the
-  tool, not by convention. REST API via long-lived access token,
-  supervisor via SSH to the OS, Zigbee2MQTT via MQTT. Ships a standalone
-  reference `ha` CLI (bash + curl + jq). Use for "check my smart home",
-  "turn on a light", "battery status", "add-on restart", "pair a zigbee
-  device", HA troubleshooting (logs, logbook, history).
+  "@@HA_DESCRIPTION@@"
 ---
 
 # Home Assistant
@@ -105,3 +97,13 @@ readable at all.
 | zigbee pairing, firmware, device quirks, the rename hazard, reverse-proxy exposure | `references/z2m.md` |
 | writing/extending your own CLI on the same model | `scripts/ha.sh` (it is the reference) |
 | "is something wrong?" | `ha dashboard`, then `ha logbook -i <noise> 50`, then `ha state <entity>` |
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@HA_ESTATE@@

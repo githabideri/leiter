@@ -1,15 +1,7 @@
 ---
 name: proxmox
-description: >
-  Operate Proxmox VE hosts: list, inspect, create, snapshot, start, stop
-  and (with a human yes) destroy LXC containers and VMs through the PVE API,
-  with a command-line fallback for when the API is blind; run PBS backups
-  and restores; allocate guest IDs and addresses from a registry instead of
-  guessing; move a guest between hosts the standalone way (archive out,
-  restore in). Use for "Proxmox / PVE / PBS / LXC / VM / vzdump / snapshot /
-  which guest is on this host / spin up a box for X / is this guest backed
-  up". Not for: the storage behind the guests (a NAS skill owns that),
-  clustered live migration (a different feature), or non-PVE hypervisors.
+description: >-
+  "@@PROXMOX_DESCRIPTION@@"
 ---
 
 # Proxmox
@@ -204,3 +196,13 @@ scheme in the registry's header so the next operator inherits it.
   host-to-host guest move (archive out, restore in), which is what you
   do when a host dies and what is *not* PVE's clustered live
   migration.
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@PROXMOX_ESTATE@@

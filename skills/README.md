@@ -100,5 +100,43 @@ one by one, each generalized on purpose)*
 | [`mermaid`](mermaid/SKILL.md) | Design, write, and validate mermaid diagrams for renderers you don't control: the six-rule design contract (one reader question, shape = kind / colour = state), the theme-safe palette (contrast inside the node), the breaker list, the version-safe floor, the validation ladder; ships `mermaid-check`, the offline breaker lint | stable (v1) |
 | [`keymaster`](keymaster/SKILL.md) | Remote-unlock of encrypted boot pools: the always-on LUKS-file vault box (OS unencrypted, secrets locked, human-only open), the initramfs/dropbear unlock chain from a pty driver, per-host registry + login banner, the locked-image backup and multi-instance pattern, host onboarding (the initramfs-hook path bug, DHCP-reservation-not-static), and the scar tissue (multi-segment initramfs archives, the LUKS magic-byte offset, the Tailscale serve-syntax rename) | growing |
 
-Sixteen skills so far; the table is the map of what exists, and new
+Seventeen skills so far; the table is the map of what exists, and new
 domains add rows rather than chapters.
+
+## Overlaying onto a private estate
+
+An estate that runs one of these skills against its own machines keeps
+two copies in its private repo and renders the instance at deploy time
+(the [overlay contract](../docs/overlay-contract.md), worked example 2):
+
+- **Shape**: this tree (submodule or clone; read-only on the estate).
+- **Values**: the private repo. A mapping file (name + trigger
+  description per overlaid skill) plus, for skills whose instance body
+  is longer than a line, a file-backed estate section per skill.
+- **Instance**: rendered into the private repo's *gitignored* skills
+  root, one directory per skill. The estate section reads on as the
+  bottom of the same file (shape above, instance below), and estate
+  reference files override same-named shape references in that copy.
+
+The tokens a shape carries for the overlay (quoted in the frontmatter
+so the raw file stays valid YAML before rendering):
+
+| Token | Value |
+|---|---|
+| `@@<SKILL>_NAME@@` | the name the estate calls the skill; only on skills where that differs from the shape's (the shape keeps its own name, e.g. `nas` renders as `truenas`) |
+| `@@<SKILL>_DESCRIPTION@@` | the estate's trigger description. The public shape stays name-free; the rendered copy may carry the estate's nicknames, because the corpus is injected into that estate's sessions only |
+| `@@<SKILL>_ESTATE@@` | the body hook at the bottom of the file; the estate section renders here |
+
+Overlaid at this commit: the thirteen
+[proxmox, nas, dns, monitoring, kvm, android, nix, git-publication,
+mermaid, prod-service-changes, skill, encrypted-backup, ha].
+`keymaster` is the fourteenth: its session (which owns the estate
+instance) lands its tokenization next. The remaining skills
+(varlock, klartext, component-graph) have no estate section; they
+render as-is, and the render still verifies that no token is left
+unresolved.
+
+Why this instead of forking: the agent reads shape and estate section
+as one file, there is exactly one copy of the behavior, a fix to the
+shape lands in a public commit and reaches the estate when it bumps
+its pointer, and instance facts never leave the private repo.

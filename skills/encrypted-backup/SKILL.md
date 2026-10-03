@@ -1,18 +1,7 @@
 ---
-name: encrypted-backup
-description: >
-  Set up and operate backups of data the operator must not be able to read (a third
-  party's photos, a partner's archive, a client's files): the two trust patterns - an
-  E2E-encrypted repo (the operator runs server and storage, the data owner holds the only
-  passphrase; reference: Kopia) and a physical carrier drive (a copy that only ever grows,
-  never deletes, travels with completion markers) - plus the discipline for multi-day,
-  multi-terabyte copies: sync in its own detached session, heartbeat lines (progress
-  output dies silently), a stall detector on the log, idempotent restart, a power-cycled
-  host, notification dedup. Use for "back up <person>'s data without being able to read
-  it", "set up a Kopia server/clients", "run the big copy to the USB drive", "the backup
-  has been silent for hours", "hand the drive back to the owner", "why did the same
-  notification re-send forever". Not for: the operator's own backups (unencrypted and
-  simpler) or a monitored stack's backup-server duties (that skill owns its own chain).
+name: "@@ENCRYPTED_BACKUP_NAME@@"
+description: >-
+  "@@ENCRYPTED_BACKUP_DESCRIPTION@@"
 ---
 
 # Encrypted backup of a third party's data
@@ -174,3 +163,13 @@ that was handed back with its done-marker, every stage has a log and
 a marker, a rebooted host reassembles itself without a human, and the
 only notifications you get are *first-time* events. The boring
 version of all of that is the goal.
+
+---
+
+<!--
+  Estate instance section. An estate that maintains a mapping for this
+  skill (the overlay contract: ../docs/overlay-contract.md) renders its
+  instance content -- machines, paths, what this fleet has hit -- at
+  this spot, at deploy time. The raw shape ends here.
+-->
+@@ENCRYPTED_BACKUP_ESTATE@@
