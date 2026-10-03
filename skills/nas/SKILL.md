@@ -71,6 +71,40 @@ ssh (two quote layers) escape the inner double quotes. And there is no
 `svcs`/`systemrc` on PATH in SCALE (that was Core): `systemctl` and
 midclt.
 
+## OS updates (maintenance hops and train jumps)
+
+SCALE updates run through the `update` API service — not apt, not the
+`svcs`/`system.update` examples in older wiki articles (those are Core
+names; on SCALE 25.04 the service is `update`):
+
+| Task | call |
+|---|---|
+| current version | `midclt call system.version` |
+| what's available (current train) | `midclt call update.check_available` (JSON: version, filename, filesize, checksum) |
+| trains + current/selected | `midclt call update.get_trains` |
+| switch train (major-jump prerequisite) | `midclt call update.set_train "TrueNAS-SCALE-<Train>"` |
+| download the update file | `midclt call update.download` (job; lands in `update.get_update_location`, default `/var/db/system/update/`) |
+| install + auto-reboot | `midclt call update.update` (job) |
+
+**Verify the downloaded file's sha256 against `check_available`'s checksum
+before `update.update`** — a truncated or stale file from an interrupted
+attempt is exactly the failure class that bricks appliances (25.10.0 and
+25.10.1 broke UEFI hosts via a `/system`→`/efiboot` partition layout change;
+when jumping to a new major, target at least the second point release).
+
+**Major jump = two hops, each its own verifiable state**: update to the
+latest maintenance of the current major first, reboot, verify pools/exports/
+services, *then* switch train and take the new major. After the major lands,
+re-verify anything that talks to the box across a protocol (e.g. NFS
+clients — a new OpenZFS version changes server-side behavior, so re-run the
+write test that motivated the update, not just "it's up").
+
+If you must hard-kill the appliance mid-update (it wedged): snapshot at the
+hypervisor level first, and expect to re-run `update.download` after the
+reboot (the job verifies/resumes — idempotent on a complete file). A
+hard-kill also leaves the hypervisor with stale guest locks; see the
+Proxmox skill's "stale state after a hard kill".
+
 ## Datasets and quotas
 
 - Create with the properties that must survive:
