@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""mermaid-check: the offline breaker lint for committed mermaid.
+
+Checks a diagram for the renderers' known breakers (see
+references/renderer-compat.md): a reserved `end` inside a statement,
+directive braces inside a `%% ` comment, and unquoted labels carrying
+statement specials. It is cheap by design (regex, no parser); the
+consuming renderer remains the final judge.
+
+usage:  mermaid-check [FILE ...]
+        # no FILE: reads raw mermaid from stdin
+        # .md file: extracts ```mermaid fences (each checked in place)
+        # other file: the whole file is treated as a mermaid source
+
+exit: 0 = clean, 1 = problems found, 2 = usage/IO error
+"""
+import re
+import sys
+
+
+def check_lines(lines, src):
+    """Return (file, line, problem) triples for a diagram body.
+
+    A bare `end` on its own line is a legal subgraph terminator and is
+    never flagged; only `end` inside a statement is.
+    """
+    problems = []
+    for i, ln in enumerate(lines, 1):
+        st = ln.strip()
+        if st.startswith("%% ") and ("%%{" in st or "%%}" in st):
+            problems.append((src, i, "directive braces inside a comment"))
+        if st == "end":
+            continue
+        if not ln.lstrip().startswith(("%%", "%%{")):
+            if re.search(r"(?<![A-Za-z0-9_\"])(end)(?![A-Za-z0-9_\"])", ln):
+                problems.append((src, i, "reserved word 'end' inside a statement"))
+        for m in re.finditer(r'(?<=\[)([^"\(\){\[]+)(?=\])', ln):
+            if re.search(r"[;(){}\[\]]", m.group(1)):
+                problems.append((src, i,
+                                 "unquoted label with specials: " + m.group(1)[:40]))
+    return problems
+
+
+def extract_fences(text):
+    """Yield (body_start_line, body_lines) for each ```mermaid fence.
+
+    body_start_line is the 1-based file line of the first body line
+    (the line after the opening fence).
+    """
+    lines = text.splitlines()
+    in_fence = False
+    body_start = 0
+    for i, ln in enumerate(lines, 1):
+        if not in_fence:
+            if ln.strip().startswith("```mermaid"):
+                in_fence = True
+                body_start = i + 1
+        elif ln.strip().startswith("```"):
+            in_fence = False
+            yield body_start, lines[body_start - 1:i - 1]
+    if in_fence:
+        yield body_start, lines[body_start - 1:]  # unterminated fence: check what we have
+
+
+def main(argv):
+    if argv and argv[0] in ("-h", "--help"):
+        print(__doc__.strip())
+        return 0
+    problems = []
+    if not argv:
+        problems = check_lines(sys.stdin.read().splitlines(), "<stdin>")
+    else:
+        for path in argv:
+            try:
+                text = open(path, encoding="utf8").read()
+            except OSError as e:
+                print(f"{path}: {e}", file=sys.stderr)
+                return 2
+            if path.endswith(".md"):
+                for start, body in extract_fences(text):
+                    for src, i, msg in check_lines(body, path):
+                        problems.append((src, start + i - 1, msg))
+            else:
+                for src, i, msg in check_lines(text.splitlines(), path):
+                    problems.append((src, i, msg))
+    for src, line, msg in problems:
+        print(f"{src}:{line}: {msg}")
+    if problems:
+        print(f"\n{len(problems)} problem(s) across {len(set(p[0] for p in problems))} file(s)")
+        return 1
+    print("mermaid-check: clean")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,183 @@
+#!/usr/bin/env python3
+"""overlay-apply: the deploy-time render step of the overlay contract
+(docs/overlay-contract.md).
+
+The public repo owns the shape (templates with @@TOKEN@@ placeholders);
+the private repo owns the values (a mapping file). This tool is the
+meeting point: it renders values into a template, refuses to emit
+anything half-rendered, and can audit files for leftover tokens.
+
+The mapping file is `KEY=value` or `KEY: value` lines (`#` comments; keys
+with or without the @@ wrappers; the value is everything after the first
+separator, so values may contain `=` or `:`). Keep it out of version
+control: it is your estate's address book.
+
+usage:
+  overlay-apply render MAPPING FILE... [--out FILE|DIR] [--allow-unresolved]
+      Render one or more templates. Single input: stdout by default,
+      or a file with --out. Multiple inputs: --out must be a directory
+      (files are written with their base name). Refuses to write if any
+      token in the input has no value (exit 2) unless --allow-unresolved.
+  overlay-apply check FILE...
+      Audit files for leftover @@TOKEN@@ placeholders (exit 1 if any).
+      Use on rendered output before it is deployed, or on a private
+      copy that should have been rendered already.
+  overlay-apply list FILE...
+      Print the distinct tokens found (one per line, in order) so you
+      can bootstrap a mapping file.
+
+exit: 0 ok, 1 problems found (check), 2 unresolved tokens (render),
+      3 usage/IO error
+"""
+import os
+import re
+import sys
+
+TOKEN = re.compile(r"@@([A-Z][A-Z0-9_]*)@@")
+
+
+def load_mapping(path):
+    values = {}
+    order = []
+    with open(path, encoding="utf8") as f:
+        for lineno, line in enumerate(f, 1):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                key, val = line.split("=", 1)
+            elif ":" in line:
+                key, val = line.split(":", 1)
+            else:
+                sys.exit(f"mapping {path}:{lineno}: expected KEY=value or KEY: value, got: {line}")
+            key = key.strip().lstrip("@").rstrip("@")
+            if not re.fullmatch(r"[A-Z][A-Z0-9_]*", key):
+                sys.exit(f"mapping {path}:{lineno}: bad token name: {key}")
+            if key not in values:
+                order.append(key)
+            values[key] = val.strip()
+    return values, order
+
+
+def tokens_in(text):
+    return TOKEN.findall(text)
+
+
+def cmd_render(argv):
+    if not argv:
+        sys.exit("usage: overlay-apply render MAPPING FILE... [--out FILE|DIR] [--allow-unresolved]")
+    allow_unresolved = False
+    if "--allow-unresolved" in argv:
+        allow_unresolved = True
+        argv.remove("--allow-unresolved")
+    out = None
+    if "--out" in argv:
+        i = argv.index("--out")
+        out = argv[i + 1]
+        del argv[i:i + 2]
+    mapping, order = load_mapping(argv[0])
+    files = argv[1:]
+    if not files:
+        sys.exit("render: no input file")
+    if len(files) > 1 and out is None:
+        sys.exit("render: multiple inputs need --out DIR")
+
+    rendered = []
+    unresolved = {}
+    for path in files:
+        try:
+            text = open(path, encoding="utf8").read()
+        except OSError as e:
+            sys.exit(f"{path}: {e}")
+        missing = {t for t in tokens_in(text) if t not in mapping}
+        if missing:
+            unresolved.setdefault(path, sorted(missing))
+        text = TOKEN.sub(lambda m: mapping.get(m.group(1), m.group(0)), text)
+        rendered.append((path, text))
+
+    for path, missing in unresolved.items():
+        print(f"UNRESOLVED {path}: {', '.join('@@' + t + '@@' for t in missing)}",
+              file=sys.stderr)
+    if unresolved:
+        if not allow_unresolved:
+            print(f"\n{sum(len(v) for v in unresolved.values())} unresolved token(s); "
+                  f"refusing to write (pass --allow-unresolved to force)", file=sys.stderr)
+            return 2
+
+    # report mapping values that appear in no input (typo detector)
+    all_input_tokens = set()
+    for path in files:
+        all_input_tokens.update(tokens_in(open(path, encoding="utf8").read()))
+    for k in order:
+        if k not in all_input_tokens:
+            print(f"note: mapping value {k} not used by any input", file=sys.stderr)
+
+    if out is None:
+        if len(rendered) > 1:
+            sys.exit("render: multiple inputs need --out DIR")
+        sys.stdout.write(rendered[0][1])
+    else:
+        for path, text in rendered:
+            if out.endswith("/") or os.path.isdir(out) or len(rendered) > 1:
+                os.makedirs(out, exist_ok=True)
+                dest = os.path.join(out, os.path.basename(path))
+            else:
+                dest = out
+            with open(dest, "w", encoding="utf8") as f:
+                f.write(text)
+            print(f"wrote {dest}", file=sys.stderr)
+    return 0
+
+
+def cmd_check(argv):
+    if not argv:
+        sys.exit("usage: overlay-apply check FILE...")
+    found = 0
+    for path in argv:
+        try:
+            lines = open(path, encoding="utf8").read().splitlines()
+        except OSError as e:
+            sys.exit(f"{path}: {e}")
+        for i, line in enumerate(lines, 1):
+            for t in tokens_in(line):
+                print(f"{path}:{i}: unresolved token @ @{t}@ @")
+                found += 1
+    if not found:
+        print("overlay-apply check: clean (no leftover tokens)")
+    return 1 if found else 0
+
+
+def cmd_list(argv):
+    if not argv:
+        sys.exit("usage: overlay-apply list FILE...")
+    seen = []
+    for path in argv:
+        try:
+            text = open(path, encoding="utf8").read()
+        except OSError as e:
+            sys.exit(f"{path}: {e}")
+        for t in tokens_in(text):
+            if t not in seen:
+                seen.append(t)
+    for t in seen:
+        print(t)
+    return 0
+
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help"):
+        print(__doc__.strip())
+        return 0
+    cmd, rest = argv[0], argv[1:]
+    if cmd == "render":
+        return cmd_render(rest)
+    if cmd == "check":
+        return cmd_check(rest)
+    if cmd == "list":
+        return cmd_list(rest)
+    print(f"unknown command: {cmd}", file=sys.stderr)
+    return 3
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

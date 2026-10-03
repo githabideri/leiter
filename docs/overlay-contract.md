@@ -88,12 +88,40 @@ So a reader can stand up the whole stack from the public repo against
    (it is your estate's address book); same handling as any secret:
    never committed to a public remote, ideally not even in plaintext if
    you can avoid it.
-4. **Substitute at deploy, not at commit.** `envsubst`-style rendering into
-   a gitignored path or directly onto the target. Commit only the template
-   and the (token-free) mapping *schema*.
+4. **Substitute at deploy, not at commit.** Render into a gitignored
+   path or directly onto the target; the tool for this is
+   `scripts/overlay-apply/overlay-apply` (the section below). Commit only
+   the template and the (token-free) mapping *schema*.
 5. **Sweep on every push.** The sanitizer greps the public repo for
    address classes and identifier shapes. Zero hits, always, including in
    commit *messages* and history.
+
+## The tool
+
+`scripts/overlay-apply/overlay-apply` is the deploy step made small and
+boring. It is stdlib Python; the example in `examples/` is a complete
+walk-through (template, mapping, all three subcommands).
+
+| subcommand | what it does | exit |
+|---|---|---|
+| `render MAPPING FILE... [--out FILE\|DIR]` | substitute values into the template. Multiple inputs need `--out DIR`. **Refuses to write if any token has no value** (lists them); `--allow-unresolved` forces a partial render. Unused mapping values are reported (typo detector). | 0 ok / 2 unresolved |
+| `check FILE...` | audit a *rendered* (or should-be-rendered) file for leftover `@@TOKEN@@` placeholders | 1 if any |
+| `list FILE...` | print the distinct tokens a template needs, in order: the way to bootstrap a mapping file | 0 |
+
+The mapping file is `KEY=value` or `KEY: value` lines (keys with or
+without the `@@` wrappers; `#` comments; the value is everything after
+the first separator, so values may themselves contain `=` or `:`). The
+token grammar is `@@` + uppercase word (`[A-Z][A-Z0-9_]*`) + `@@`.
+
+Two properties matter more than the rest: **a render never emits
+half-rendered output** (the unresolved-token refusal is the whole safety
+story), and **check exists so a rendered artifact can prove it is
+finished** before it is deployed or committed to a private repo.
+
+It deliberately does *not* bootstrap an estate (no hooks, no settings
+files): leiter is the shape, and the instance's own repo owns its
+wiring. The tool covers the contract's one mechanical step and nothing
+else.
 
 ## The failure modes (so you can avoid them)
 

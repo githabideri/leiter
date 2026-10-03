@@ -60,13 +60,14 @@ leiter/
 │   ├── practice/      ← layer 2: operating doctrine (grows here)
 │   └── guides/        ← step-shaped build guides (human-facing; the agent-on-small-box shape)
 └── scripts/
-    └── sanitize-sweep.sh  ← the pre-push leak guard
+    ├── sanitize-sweep.sh  ← the pre-push leak guard (leak patterns + the de-slop style floor; also enforced by the .github leak-guard workflow on every push)
+    └── overlay-apply/     ← the deploy-time render step of the overlay contract (render / check / list, example inside)
 ```
 
 ## Status
 
-Early. The base docs are in; the corpus grows by deliberate extraction
-from the private instance, one piece at a time, each written or
+The base docs are in; the corpus (16 skills so far) grows by deliberate
+extraction from the private instance, one piece at a time, each written or
 generalized on purpose. It is curation, so it moves at curation speed.
 The general skills land first.
 

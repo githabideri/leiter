@@ -1,0 +1,22 @@
+name: leak-guard
+
+# The pre-push sweep, enforced on the remote side: leak-pattern classes
+# (private address ranges, tailnet CGAT, internal hostname shapes,
+# Proxmox id shapes) plus the de-slop style floor (em dashes outside
+# the quoted gamut example). Zero hits or the push fails.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: sanitize sweep (leaks + style)
+        run: bash scripts/sanitize-sweep.sh

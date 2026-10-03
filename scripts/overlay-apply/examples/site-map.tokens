@@ -1,0 +1,9 @@
+# the private mapping file (never committed anywhere public)
+# keys may carry the @@ wrappers or not; values may contain '=' or ':'
+PRIMARY_HOST:  the-primary-box
+BACKUP_HOST:   the-offsite-box
+SITE_PRIMARY:  the-main-site
+SITE_OFFSITE:  the-second-site
+TUNNEL_NAME=  my-tailnet-name
+DB_URL = postgres://user:pass@db.internal:5432/main
+SITE_MAP=grafana_dashboard_site_map
