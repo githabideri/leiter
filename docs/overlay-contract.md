@@ -139,8 +139,13 @@ walk-through (template, mapping, all three subcommands).
 
 The mapping file is `KEY=value` or `KEY: value` lines (keys with or
 without the `@@` wrappers; `#` comments; the value is everything after
-the first separator, so values may themselves contain `=` or `:`). The
-token grammar is `@@` + uppercase word (`[A-Z][A-Z0-9_]*`) + `@@`.
+the first separator, so values may themselves contain `=` or `:`). A
+value may be **double-quoted (env convention)** when it needs quoting in
+its consumer: `NAME="hello-3001"` — the loader strips the outer pair
+only, inner escapes (\" etc.) stay intact for the consumer. That is how
+a YAML double-quoted frontmatter value travels through a plain-text
+mapping. The token grammar is `@@` + uppercase word (`[A-Z][A-Z0-9_]*`)
++ `@@`.
 
 **Multi-line values.** The mapping format is one line per value. A
 value that is a *document* (a section, not a word) does not fit: keep

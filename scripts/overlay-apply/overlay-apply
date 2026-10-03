@@ -53,9 +53,16 @@ def load_mapping(path):
             key = key.strip().lstrip("@").rstrip("@")
             if not re.fullmatch(r"[A-Z][A-Z0-9_]*", key):
                 sys.exit(f"mapping {path}:{lineno}: bad token name: {key}")
+            val = val.strip()
+            # env-file convention: KEY="value" (double-quoted) carries a value
+            # that needs quoting in its consumer (YAML frontmatter, shell).
+            # Strip the outer pair only; inner escapes (\" etc.) stay intact
+            # for the consumer to interpret.
+            if len(val) >= 2 and val[0] == '"' and val[-1] == '"':
+                val = val[1:-1]
             if key not in values:
                 order.append(key)
-            values[key] = val.strip()
+            values[key] = val
     return values, order
 
 
