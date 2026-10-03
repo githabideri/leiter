@@ -79,7 +79,7 @@ names; on SCALE 25.04 the service is `update`):
 | trains + current/selected | `midclt call update.get_trains` |
 | switch train (major-jump prerequisite) | `midclt call update.set_train "TrueNAS-SCALE-<Train>"` |
 | download the update file | `midclt call update.download` (job; lands in `update.get_update_location`, default `/var/db/system/update/`) |
-| install + auto-reboot | `midclt call update.update` (job) |
+| install (job) | `midclt call update.update` (**does NOT reboot by default on 25.10** - the `reboot` attr defaults to false): call `midclt call system.reboot` (or pass `{'reboot': true}`) after the job finishes |
 
 **Verify the downloaded file's sha256 against `check_available`'s checksum
 before `update.update`** - a truncated or stale file from an interrupted

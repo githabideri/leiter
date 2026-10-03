@@ -95,6 +95,30 @@ Every lifecycle call returns a task UPID; the wrapper polls it to
 completion, so a returned success is a finished operation, not a
 submitted one.
 
+## PVE 9: QEMU VMs run in systemd scopes (no `qemud`)
+
+PVE 9 has **no `qemud` daemon**: each QEMU VM runs in a **transient systemd
+scope** `<vmid>.scope` (under `qemu.slice`, created over D-Bus with
+`KillMode=process`). Two failure modes seen on PVE 9.2.21:
+
+1. **`qm start` -> "timeout waiting on systemd" (20 s).** A stale
+   `<vmid>.scope` unit is still *loaded* with leftover tasks in its cgroup
+   (e.g. a qemu process orphaned by a broken stop: the scope reads
+   `inactive (dead)` but `Tasks: N`). The start path waits for the unit to
+   be *removed*, which never happens while the cgroup has processes.
+   Deleting `/run/systemd/transient/<vmid>.scope` and `daemon-reload` is
+   **not enough** (the unit stays loaded while the cgroup exists). **Fix:**
+   read `/sys/fs/cgroup/qemu.slice/<vmid>.scope/cgroup.procs`, `kill -9` the
+   pids, `rmdir` the cgroup dir, then `qm start` (instant).
+2. **`qm stop` succeeds but qemu keeps running.** With `KillMode=process`
+   the stop signal goes to the scope's main pid (the perl wrapper); if it
+   does not forward it, the qemu child is orphaned to init. The VM keeps
+   living while PVE's state says stopped, and the next start hits case 1.
+   **Always verify liveness with `pgrep -af "kvm.*-id <vmid>"`** (the
+   process is `/usr/bin/kvm -id <vmid> ...`; plain `pgrep kvm` or
+   `pgrep -f "vmid=..."` match nothing) and check the cgroup after any
+   stop before trusting `qm list`.
+
 ## Host kernel updates on PVE 9.2+ (UEFI hosts): three independent layers
 
 `pve` dist-upgrades install a new kernel, but **which kernel actually
