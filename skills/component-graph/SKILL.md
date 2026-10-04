@@ -31,7 +31,8 @@ willingness to keep the graph *derived*. The skill contains:
   name → site → role projection other skills and agents read to resolve a
   machine nickname without opening the full inventory;
 - `examples/`: a runnable miniature estate (an inventory table, two
-  service directories, a curation file, a config) so the whole loop
+  service directories, an overlay-skills extractor that stays a no-op
+  without an overlay, a curation file, a config) so the whole loop
   works out of the box;
 - `references/live-diff.md`: the paper-audit's sibling, diffing the
   graph against what the hosts actually run.
@@ -97,6 +98,32 @@ component-graph live  live-spec.json --config config.json
 - **live** is the diff against reality (next reference): per host, a
   command that lists what is actually running, compared with the
   graph's children of that host.
+
+## A source the directory scan misses: overlay-rendered skills
+
+If the estate's skills are overlaid from a public shape repo
+([`docs/overlay-contract.md`](../../docs/overlay-contract.md), worked
+example 2), the skills the agent actually loads include a class that
+is *not in the skills directory*: the body is the public shape tree,
+the values are the private overlay directory (mapping plus estate
+file), and the rendered instance lands in a gitignored skills root.
+A skills-directory scan extractor then fails in two ways: the class
+**vanishes** (the rendered root is gitignored, the shape tree is a
+submodule; the capabilities appear in no node, and their corresponding
+tools read as orphans), or the estate patches each one by hand: a
+per-skill curation node that works for one and silently misses the
+next shape the overlay picks up.
+
+The fix is an extractor, not curation: `examples/extractors/
+overlay-skills.py` (wired into the example config; a no-op when the
+overlay directory is absent, so a plain estate carries it for free).
+One `skill/<estate-name>` node per values directory, the estate name
+taken from the overlay mapping (the estate may call the shape `nas`
+what it actually calls `truenas`), with the node's `source`
+naming both owners (shape tree plus values directory). The rendered
+copy is deliberately not a source: it is a build artifact of those
+two, and pointing a source of record at a disposable artifact is the
+drift the overlay contract exists to prevent.
 
 ## The curation file, precisely
 

@@ -103,6 +103,13 @@ as a feature, and the reason an estate never forks a public skill: a
 fix to the shape lands in a public commit and reaches the estate when
 it bumps its pointer.
 
+If the estate keeps a component map (the `component-graph` skill), the
+overlay keeps its one-node discipline there too: one `skill/<estate-
+name>` node per overlaid shape, its source the shape tree plus the
+values directory. The rendered copy never appears as a source, and a
+directory scan of the gitignored skills root is not an extractor
+(because the whole class would vanish from the map).
+
 ## Using it yourself
 
 1. **Pick your token alphabet.** Small and boring beats clever:

@@ -35,6 +35,7 @@ stopped.
 | the inventory file | hosts, guests, IPs, status, per-host notes |
 | per-service directories | a service's facts: what it is, where it runs, how to run it |
 | the skills directory | capabilities: one folder per coherent domain |
+| the overlay directory (when the estate runs the overlay contract on its skills) | the overlay-rendered capabilities: one node per estate name, sourced from the public shape tree plus the private values directory; the rendered copy is a build artifact, never a source |
 | the scripts directory | tools: one executable unit per folder |
 | the submodules | repos that are part of the estate |
 | the logs directory | append-only, machine-written records (excluded from staleness checks: by design they are always dirty) |
@@ -45,7 +46,10 @@ every curation entry is promotion debt. When a fact earns a home in a
 source of record, the curation entry is deleted. If curation entries
 start living there for months, the curation has become a second source
 of truth, and that is the failure mode the whole design exists to
-prevent.
+prevent. (One source kind needs more care than a folder scan: an
+overlay-rendered skill has its home split between a public shape repo
+and a private values directory; the `component-graph` skill carries
+the extractor for it.)
 
 ## The rules
 

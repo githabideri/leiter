@@ -3,7 +3,9 @@
     {"path": "extractors/inventory.py", "lang": "python",
      "watch": ["inventory.md"]},
     {"path": "extractors/services.py", "lang": "python",
-     "watch": ["services"]}
+     "watch": ["services"]},
+    {"path": "extractors/overlay-skills.py", "lang": "python",
+     "watch": ["configs/overlay"]}
   ],
   "curation": "curation.json",
   "outdir": "graph-out"
