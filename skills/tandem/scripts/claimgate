@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""claimgate: the mechanical gate for a campaign's claim table.
+
+Checks the campaign's claims.md the way a compiler checks types:
+  - the table parses and has one claim per row
+  - the label vocabulary is closed (predicted/measured/cited/refuted/not-established)
+  - every `predicted` row is resolved (a predicted row at gate time is a failure)
+  - `measured` / `refuted` / `not-established` rows point at existing, non-empty files
+  - `cited` / `git` rows resolve: http(s) URLs are fetched (HEAD, then GET),
+    `git:<repo>:<ref>:<path>` is checked with `git -C <repo> show <ref>:<path>`
+Exit 0 when every row passes (or is explicitly skipped with --no-net),
+1 otherwise. --json emits machine-readable results.
+
+Stdlib only. Usage:
+  claimgate <campaign-dir> [--no-net] [--json] [--ledger <file>]
+"""
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.request
+
+FINAL = {"measured", "refuted", "not-established"}
+ALL = FINAL | {"cited", "git", "predicted"}
+NEEDS_FILE = {"measured", "refuted", "not-established"}
+
+
+def fail(msg):
+    print(f"claimgate: {msg}", file=sys.stderr)
+    sys.exit(2)
+
+
+def parse_table(path):
+    rows = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line.startswith("|"):
+                continue
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            if len(cells) < 3:
+                continue
+            if set(cells[0]) <= {"#", "-", " ", ":"} or cells[0].lower() == "claim":
+                continue  # header / separator
+            label = cells[2].lower()
+            label = label.split(" (")[0].split(" (")[0]
+            m = re.match(r"^([a-z-]+)", label)
+            label = m.group(1) if m else label
+            if label not in ALL:
+                rows.append((cells[0], cells[1], "unknown", cells[3] if len(cells) > 3 else ""))
+            else:
+                rows.append((cells[0], cells[1], label, cells[3] if len(cells) > 3 else ""))
+    if not rows:
+        fail(f"no claim rows found in {path}")
+    return rows
+
+
+def check_file(root, ev):
+    for p in ev.split():
+        if p in ("-", ""):
+            continue
+        fp = os.path.join(root, p)
+        if not os.path.isfile(fp):
+            return False, f"{p} missing"
+        if os.path.getsize(fp) == 0:
+            return False, f"{p} empty"
+    return True, ""
+
+
+def check_url(ev, no_net):
+    for u in ev.split():
+        if u in ("-", ""):
+            continue
+        if no_net:
+            continue  # reported as skipped by caller
+        ua = {"User-Agent": "claimgate/1.0"}  # some CDNs 403 the default python UA
+        try:
+            req = urllib.request.Request(u, method="HEAD", headers=ua)
+            with urllib.request.urlopen(req, timeout=20) as r:
+                code = r.getcode()
+            if code >= 400:
+                return False, f"{u} -> HTTP {code}"
+        except urllib.error.HTTPError as e:
+            if e.code in (405, 501):  # HEAD refused: try GET
+                try:
+                    req = urllib.request.Request(u, method="GET", headers=ua)
+                    with urllib.request.urlopen(req, timeout=20) as r:
+                        if r.getcode() >= 400:
+                            return False, f"{u} -> HTTP {r.getcode()}"
+                    continue
+                except Exception:
+                    return False, f"{u} -> unreadable"
+            return False, f"{u} -> HTTP {e.code}"
+        except Exception as e:
+            return False, f"{u} -> {type(e).__name__}: {e}"
+    return True, ""
+
+
+def check_git(ev):
+    parts = ev.split(":", 3)  # git:repo:ref:path
+    if len(parts) < 4:
+        return False, f"bad git ref {ev!r} (want git:repo:ref:path)"
+    _, repo, ref, path = parts
+    try:
+        r = subprocess.run(["git", "-C", repo, "show", f"{ref}:{path}"],
+                           capture_output=True, timeout=30)
+    except FileNotFoundError:
+        return False, "git not available"
+    if r.returncode != 0:
+        return False, f"git show {ref}:{path} in {repo} failed"
+    return True, ""
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("campaign")
+    ap.add_argument("--no-net", action="store_true", help="skip URL checks")
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--ledger", default=None)
+    args = ap.parse_args()
+
+    root = os.path.abspath(args.campaign)
+    claims = os.path.join(root, "claims.md")
+    if not os.path.isfile(claims):
+        fail(f"{claims} not found")
+
+    results = []
+    ok = True
+    for num, claim, label, ev in parse_table(claims):
+        good, why, skipped = True, "", False
+        if label == "predicted":
+            good, why = False, "unresolved predicted row (must be measured/refuted/not-established)"
+        elif label == "unknown":
+            good, why = False, f"unknown label {ev!r}"
+        elif label in NEEDS_FILE:
+            good, why = check_file(root, ev)
+            if good and ev in ("-", ""):
+                good, why = False, "no evidence file"
+        elif label == "git":
+            good, why = check_git(ev)
+        elif label == "cited":
+            good, why = check_url(ev, args.no_net)
+            if good and args.no_net:
+                skipped = True
+        results.append({"row": num, "claim": claim, "label": label,
+                        "evidence": ev, "pass": good and not skipped,
+                        "skipped": skipped, "reason": why})
+        ok = ok and (good or skipped)
+
+    if args.ledger and not args.json:
+        # advisory: surface ledger entries whose re-derive condition is due
+        try:
+            text = open(args.ledger, encoding="utf-8").read()
+            if "RE-DERIVE" in text.upper():
+                print("claimgate: constraint ledger carries a RE-DERIVE marker; "
+                      "re-derive the boundary with the human before acting.",
+                      file=sys.stderr)
+        except OSError:
+            pass
+
+    if args.json:
+        print(json.dumps({"campaign": root, "ok": ok, "results": results}, indent=1))
+    else:
+        for r in results:
+            mark = "PASS" if r["pass"] else ("SKIP" if r["skipped"] else "FAIL")
+            print(f"[{mark}] {r['row']} ({r['label']}) {r['claim'][:60]}")
+            if r["reason"]:
+                print(f"       {r['reason']}")
+        print(f"\nclaimgate: {'green' if ok else 'red'}: {len(results)} rows")
+    sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+    main()

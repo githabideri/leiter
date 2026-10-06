@@ -99,8 +99,9 @@ one by one, each generalized on purpose)*
 | [`skill`](skill/SKILL.md) | The meta-skill: how to write a skill into a corpus, the open-standard bundle, naming after the user's vocabulary, the description-as-trigger doctrine (300–600 chars, measured corpus token budget, anti-ratchet, exclusion pointers), progressive disclosure into references named by knowledge domain | growing |
 | [`mermaid`](mermaid/SKILL.md) | Design, write, and validate mermaid diagrams for renderers you don't control: the six-rule design contract (one reader question, shape = kind / colour = state), the theme-safe palette (contrast inside the node), the breaker list, the version-safe floor, the validation ladder; ships `mermaid-check`, the offline breaker lint | stable (v1) |
 | [`keymaster`](keymaster/SKILL.md) | Remote-unlock of encrypted boot pools: the always-on LUKS-file vault box (OS unencrypted, secrets locked, human-only open), the initramfs/dropbear unlock chain from a pty driver, per-host registry + login banner, the locked-image backup and multi-instance pattern, host onboarding (the initramfs-hook path bug, DHCP-reservation-not-static), and the scar tissue (multi-segment initramfs archives, the LUKS magic-byte offset, the Tailscale serve-syntax rename) | growing |
+| [`tandem`](tandem/SKILL.md) | The claim gate: pre-registered claim tables (no number without a data file), the human-owned constraint ledger (original wording, mitigation state, re-derivation trigger), the three roles (coordinator / executor / verifier, depth-1, the verifier never sees the reasoning), and the gate order (mechanical → verifier → human); ships `claimgate` and a runnable example campaign | growing |
 
-Seventeen skills so far; the table is the map of what exists, and new
+Eighteen skills so far; the table is the map of what exists, and new
 domains add rows rather than chapters.
 
 ## Overlaying onto a private estate

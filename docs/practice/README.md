@@ -18,6 +18,7 @@ in the private instance and not yet written up.
 | *secrets.md* | Where do secrets live, how do tools get them without ever seeing them in a doc, and how do you redact a log that already leaked one? (Schema-declared env files, injection at run time, the redaction pipeline.) | growing |
 | *change-governance.md* | What may an agent change on its own, what needs a human, and how does a change stay attributable? (The three-zone model: free parameters / repo-owned plumbing / visible provenance; the concurrency registry; verification vocabulary.) | growing |
 | *agent-skills-corpus.md* | How do you build and keep a corpus of skills that actually gets used? (The trigger-as-description discipline, the token budget, splitting vs. growing, the bundle layout; cross-ref `../skills/README.md`.) | growing |
+| *campaigns.md* | How do you make a bounded piece of work produce claims that survive publication? (The campaign shape: charter with a primary-sources list, the pre-registered claim table, the human-owned constraint ledger with re-derivation, the tandem of roles, and the gate order: mechanical → verifier → human; cross-ref `../skills/tandem/`.) | growing |
 
 ## Conventions for writing here
 
