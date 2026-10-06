@@ -96,8 +96,16 @@ publication question the human stays out of the loop:
 2. **Depth-1 is structural, not a rule.** A child carries no
    dispatch capability: tracked children get no spawn tools at
    all, and the executor brief forbids re-dispatch even where the
-   harness does not enforce it. A blocked child stops and logs
-   (the stop rule) or asks the human; it never re-dispatches.
+   harness does not enforce it. A blocked child stops, logs, and
+   ends (the stop rule); it does not ask the human. You are the
+   single question point to the human: read the stop log, resolve
+   what the charter and the constraint ledger answer by
+   re-dispatching a corrected brief, and ask the human once, with
+   a recommendation and each option labelled by what it touches
+   (especially which options change a human-owned constraint). A
+   child's direct ask is reserved for imminent danger; a routine
+   question that reaches the human is a protocol violation you
+   note in the progress file.
 3. **Ingest data, not summaries.** When a lane ends, take its data
    files and failure note into the campaign root, re-tag the table
    from the files, re-run `claimgate`. Repeat per wave if the
@@ -114,14 +122,18 @@ load-bearing lines:
 
 - **Executor**: one bounded brief; first line date-stamped; a
   no-touch list; a stop rule (first boundary-adjacent need → stop,
-  log, end); reports raw data + failures + file pointers; **no
-  conclusions**; may ask about its brief, never amends it.
+  log, end; that is how it asks, since a direct ask to the human
+  is reserved for imminent danger); reports raw data + failures +
+  file pointers; **no conclusions**; may ask about its brief (via
+  the stop log), never amends it.
 - **Verifier**: fresh context; receives only the claim table, the
   data files, and the draft; per-claim `pass`/`fail` + one-line
   reason in `verdicts/verdict.md`; a separate advisory concerns
   section; *flag only what affects the claims*.
 - **Coordinator**: owns charter + table; no number without a data
-  file; no self-verification; per-campaign (dies with the archive).
+  file; no self-verification; the single question point to the
+  human (child questions arrive as stop logs, never raw);
+  per-campaign (dies with the archive).
 
 ## Publication
 

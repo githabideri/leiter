@@ -64,7 +64,7 @@ Three roles, each a separate context, plus the human at the two gates:
 | Role | Owns | May not |
 |---|---|---|
 | **Coordinator** | the charter, the claim table, the dispatch | write a number without a data file; verify its own claims; harden or soften a constraint |
-| **Executor** | one bounded brief; raw data; failures; file pointers | draw conclusions; amend its brief (it may *ask*); touch the no-touch list |
+| **Executor** | one bounded brief; raw data; failures; file pointers | draw conclusions; amend its brief (it may *ask*, via the stop log); touch the no-touch list |
 | **Verifier** | the verdict file | see the coordinator's reasoning; use open-ended verdicts |
 
 The verifier gets a **fresh context** holding only the claim table,
@@ -78,10 +78,14 @@ delegation, no standing supervisor across campaigns, one bounded
 brief per executor. Where the harness tracks child contexts, the
 depth limit is a property of the mechanism, not of the model's
 self-control: verified children are simply not given the spawn
-tools, so a delegation cascade is impossible to execute, and the
-only way a child escalates is to ask the human. Prompt-level "do
-not spawn" rules belong to harnesses without that property, where
-they are the only guard.
+tools, so a delegation cascade is impossible to execute. The same
+logic applies to questions: the only escalation a child gets is to
+stop and log, and the coordinator (woken by the stop) is the
+single question point to the human. A child that asks the human
+directly is not escalating, it is skipping a level: the human who
+was supposed to appear exactly twice now answers brief-level
+details. Prompt-level "do not spawn" rules belong to harnesses
+without that property, where they are the only guard.
 
 ## The gates, in order
 
@@ -146,6 +150,18 @@ they are the only guard.
   where the harness has them; the human opens them only where it
   does not), so the human appears exactly twice: approving the
   drafts and deciding on publication.
+- **The leapfrog**: a child context asks the human a brief-level
+  question directly, skipping the coordinator; the human becomes a
+  middle manager, and the same question often arrives twice (once
+  raw from the child, once consolidated by the coordinator). Fix:
+  a child's question is its stop log and it ends; the coordinator
+  reads it, resolves what the charter and the constraint ledger
+  answer by re-dispatching a corrected brief, and asks the human
+  once, with a recommendation and each option labelled by what it
+  touches (especially: which options change a human-owned
+  constraint). A child's direct ask is reserved for imminent
+  danger: about to act destructively where the brief does not
+  cover it.
 
 ## Adopting it
 
