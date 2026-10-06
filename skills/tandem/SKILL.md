@@ -83,11 +83,29 @@ trigger; a plain "open a campaign" message works too):
 4. Show the drafts and ask: **Approve / Revise / Don't start.**
    Silence and prior enthusiasm are not approval.
 
-Then you are the coordinator: dispatch executors (a sub-session for
-bounded work that reports back; a fresh session or a relay leg for
-long or parallel work), ingest their *data files* (not their
-summaries) into the table, and when the table is resolved run the
-gate order: `claimgate` → verifier → human publication approval.
+Then you are the coordinator, and between approval and the
+publication question the human stays out of the loop:
+
+1. **Dispatch the lanes.** One child context per lane in the
+   charter, the executor brief as its whole first message. Where
+   the harness tracks children (pi-web does: `spawn_subsession`),
+   the coordinator spawns them itself and yields its own slot at
+   the join point; where it does not, the human opens one session
+   per lane with the brief pasted in, and the loop degrades to
+   human-carried legs (still gated, just slower).
+2. **Depth-1 is structural, not a rule.** A child carries no
+   dispatch capability: tracked children get no spawn tools at
+   all, and the executor brief forbids re-dispatch even where the
+   harness does not enforce it. A blocked child stops and logs
+   (the stop rule) or asks the human; it never re-dispatches.
+3. **Ingest data, not summaries.** When a lane ends, take its data
+   files and failure note into the campaign root, re-tag the table
+   from the files, re-run `claimgate`. Repeat per wave if the
+   charter has more than one.
+4. **Gate order, unchanged:** `claimgate` green → one fresh
+   verifier context → human publication approval. The human
+   appears exactly twice: approving the drafts, deciding on
+   publication.
 
 ## The briefs
 

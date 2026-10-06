@@ -44,6 +44,9 @@ named), DECISIONS.md append-only (one line per change:
 time / what / before / after / why), and a final note listing
 failures and file pointers. No interpretations, no conclusions;
 the coordinator draws those from your files.
+You are a child context: you have no dispatch capability and none
+is coming. A blocked lane is reported (stop rule) or asked about
+(to the human), never re-dispatched.
 ```
 
 ## Verifier
@@ -62,4 +65,6 @@ exists and says it. Do not invent new claims; do not grade
 style. After the per-claim verdicts you may add a "Concerns"
 section; it is advisory and is read as such. Flag only things
 that affect the claims.
+You are a fresh child context with no dispatch capability: you
+write the verdict file and end.
 ```

@@ -74,8 +74,14 @@ place where a role hierarchy is justified rather than bureaucracy: a
 context that shares the generator's history has *correlated* errors
 by construction, so it cannot falsify what it produced. Everything
 else about the roles is deliberately un-bureaucratic: depth-1
-delegation (executors don't re-delegate), no standing supervisor
-across campaigns, one bounded brief per executor.
+delegation, no standing supervisor across campaigns, one bounded
+brief per executor. Where the harness tracks child contexts, the
+depth limit is a property of the mechanism, not of the model's
+self-control: verified children are simply not given the spawn
+tools, so a delegation cascade is impossible to execute, and the
+only way a child escalates is to ask the human. Prompt-level "do
+not spawn" rules belong to harnesses without that property, where
+they are the only guard.
 
 ## The gates, in order
 
@@ -132,6 +138,14 @@ across campaigns, one bounded brief per executor.
   supervisor across campaigns and the committee degrades into an org
   chart. Fix: the coordinator is per-campaign and dies with the
   archive.
+- **The babysitter trap**: the human ends up opening every child
+  session and forwarding every result between approval and
+  publication; the "autonomous" committee turns out to be a
+  committee the human clerks. Fix: the coordinator dispatches
+  child contexts itself after the approval gate (tracked children
+  where the harness has them; the human opens them only where it
+  does not), so the human appears exactly twice: approving the
+  drafts and deciding on publication.
 
 ## Adopting it
 
