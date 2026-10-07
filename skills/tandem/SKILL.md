@@ -109,7 +109,10 @@ publication question the human stays out of the loop:
 3. **Ingest data, not summaries.** When a lane ends, take its data
    files and failure note into the campaign root, re-tag the table
    from the files, re-run `claimgate`. Repeat per wave if the
-   charter has more than one.
+   charter has more than one. A claim row is a **copy** of what the
+   files say; a number that cannot be copied from a cited file does
+   not enter the table (the provenance check treats every claim
+   number otherwise).
 4. **Gate order, unchanged:** `claimgate` green → one fresh
    verifier context → human publication approval. The human
    appears exactly twice: approving the drafts, deciding on
@@ -135,12 +138,55 @@ load-bearing lines:
   human (child questions arrive as stop logs, never raw);
   per-campaign (dies with the archive).
 
+## Probe artifacts (measured regimes)
+
+A lane that asserts *where bytes live* or *where I/O goes* produces
+the two artifacts the claim then copies from (both cited in the
+claim's evidence column):
+
+- `memmap-<probe>.txt` — the loaded artifacts with byte sizes (from
+  the sha256 freeze); the measured container peaks for the run
+  (cgroup `memory.peak`, VRAM peak, page-cache/ARC cap); the
+  residency identity `Σ loaded bytes = anon (cgroup) +
+  file-backed resident + GPU + still on disk` with an **explicit
+  residual line**; and a `capacity-<probe>.tsv` (key/value bytes)
+  holding the same numbers for the gate.
+- `pidio-<probe>.csv` — `/proc/<pid>/io` (`read_bytes`, `rchar`)
+  at ≤ 2 s cadence over the whole probe, with prefill/decode window
+  markers taken from the request timeline.
+
+Why these two exist: page-fault I/O is invisible to syscall tracing,
+and "the model is in RAM" is an arithmetic statement, not an
+observation. `claimgate` enforces the matching rules on
+`measured`/`refuted` rows (disable with `--no-narrative` for
+pre-v2 campaigns): a claim of **no/zero file I/O** fails unless a
+storage-bytes counter (`read_bytes`, `rchar`, block-device sectors,
+iostat) appears in the cited evidence — a strace pread count is not
+one; a claim that an object **is / fits / lives entirely in
+RAM/VRAM** fails unless the capacity manifest's measured container
+sum is ≥ the object size within `--tolerance` (default 5%).
+
+## Sidecar discipline (compaction safety)
+
+Compaction is a lossy channel: value copies drift, pointers do not.
+Session sidecars therefore carry, next to every number they mention,
+the **reference** — `path:sha256` (hash of the file, not the line) —
+not a restatement of the value. On rehydration: read the sidecar,
+then **spot-verify two numbers against the referenced files** before
+repeating any of them; a number not in the file means the summary
+drifted — say so and re-copy from the file. This is what turns "I
+remember 35.4 GiB" into "the sampler says 39.8, and the pointer
+catches the copy" instead of the other way around.
+
 ## Publication
 
 Gate order is not negotiable: mechanical gate green → verifier
-verdicts in → human approval. After publication, corrections are
-**appended** to the published document, never rewritten. The
-campaign root is marked frozen (a `FROZEN` header in `charter.md`)
-and kept.
+verdicts in → human approval. The mechanical gate checks more than
+file existence: it also checks claim *prose* against its evidence
+(the negative-I/O method whitelist, the residency arithmetic, and
+warning-only numeric provenance — see above). After publication,
+corrections are **appended** to the published document, never
+rewritten. The campaign root is marked frozen (a `FROZEN` header in
+`charter.md`) and kept.
 
 @@TANDEM_ESTATE@@

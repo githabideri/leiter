@@ -1,30 +1,85 @@
 #!/usr/bin/env python3
-"""claimgate: the mechanical gate for a campaign's claim table.
+"""claimgate — mechanical gate for a tandem campaign's claims table.
 
-Checks the campaign's claims.md the way a compiler checks types:
-  - the table parses and has one claim per row
-  - the label vocabulary is closed (predicted/measured/cited/refuted/not-established)
-  - every `predicted` row is resolved (a predicted row at gate time is a failure)
-  - `measured` / `refuted` / `not-established` rows point at existing, non-empty files
-  - `cited` / `git` rows resolve: http(s) URLs are fetched (HEAD, then GET),
-    `git:<repo>:<ref>:<path>` is checked with `git -C <repo> show <ref>:<path>`
-Exit 0 when every row passes (or is explicitly skipped with --no-net),
-1 otherwise. --json emits machine-readable results.
+Usage:
+  claimgate <campaign-dir> [--no-net] [--json] [--ledger PATH]
+            [--no-narrative] [--tolerance 0.05] [--capacity PATH]
 
-Stdlib only. Usage:
-  claimgate <campaign-dir> [--no-net] [--json] [--ledger <file>]
+Exit codes: 0 = every row passes, 1 = at least one FAIL, 2 = usage/parse error.
+
+Checks per row (by label):
+  predicted       FAIL unless resolved to measured/refuted/not-established.
+  measured/refuted/not-established: every evidence path (space- or
+    semicolon-separated, `-` = none) must exist and be non-empty.
+  cited           every URL must answer HEAD (or GET) with HTTP < 400
+                  (skipped with --no-net).
+  git             `git:repo:ref:path` must resolve via `git show`.
+
+Narrative checks (v2; run on measured/refuted rows; disabled with
+--no-narrative for pre-v2 campaigns). These catch the error class where a
+claim's *prose* contradicts what its cited evidence can prove:
+
+  A. I/O method whitelist — a claim that asserts "no/zero file I/O" (or
+     equivalent) requires a storage-bytes counter in the cited evidence
+     (/proc/pid/io `read_bytes`/`rchar`, block-device sectors, iostat…).
+     Syscall tracing (strace pread counts) cannot see page-fault I/O and
+     fails this check on its own.
+  B. Residency arithmetic — a claim asserting that an object "is / fits /
+     lives entirely in RAM/VRAM/memory" requires a capacity manifest
+     (capacity-*.tsv under the campaign root, or --capacity) whose
+     measured container sum (cgroup_peak + vram_peak + arc_max, in bytes)
+     is >= the object size (model_files_bytes) within --tolerance
+     (default 5%). Missing manifest or shortfall = FAIL.
+  C. Numeric provenance (WARNING ONLY, never fails) — every number in the
+     claim row must appear within --tolerance in one of the cited evidence
+     files (literal or, for small files, the mean of a pair). Unmatched
+     numbers are reported; a number that is not in the data is a
+     re-derivation, not a copy.
+
+Stdlib only. The claims file is the deliverable for the verifier.
 """
 import argparse
+import bisect
 import json
 import os
 import re
 import subprocess
 import sys
 import urllib.request
+import urllib.error
 
-FINAL = {"measured", "refuted", "not-established"}
-ALL = FINAL | {"cited", "git", "predicted"}
 NEEDS_FILE = {"measured", "refuted", "not-established"}
+FINAL = NEEDS_FILE | {"cited", "git", "predicted"}
+
+# ---- v2: narrative-check patterns ----------------------------------------
+
+IO_NEG_PATTERNS = [
+    r"\bzero\s+(file|disk|storage)\s+i/o\b",
+    r"\bno\s+(file|disk|storage)\s+i/o\b",
+    r"\bzero\s+(file|disk)\s+reads\b",
+    r"\bno\s+(file|disk|storage)\s+reads\b",
+    r"\bzero\s+storage\b",
+    r"\bno\s+file\s+access\b",
+    r"\bno\s+disk\s+activity\b",
+]
+STORAGE_MARKERS = ["read_bytes", "rchar", "sectors_read", "read sectors",
+                   "iostat", "diskstats", "blkio"]
+
+RESIDENCY_PATTERNS = [
+    r"\bentirely\s+in\s+(ram|memory|host\s+ram|vram)\b",
+    r"\bfully\s+(in|resident\s+in|on)\s+(ram|memory|vram)\b",
+    r"\beverything\s+in\s+ram\b",
+    r"\ball\s+in\s+ram\b",
+    r"\ball\s+of\s+(it|the\s+model|the\s+weights|the\s+table)s?\s+(is|are|sits|lives)\b",
+    r"\bwhole\s+model\s+(is|fits|lives|sits)\b",
+    r"\bmodel\s+fully\s+resident\b",
+    r"\bfits\s+(in|on)\s+(ram|memory|vram|host\s+ram)\b",
+]
+
+CONTAINER_KEYS = ("cgroup_peak_bytes", "vram_peak_bytes", "arc_max_bytes")
+OBJECT_KEYS = ("model_files_bytes", "object_bytes")
+
+NUM_RE = re.compile(r"\b\d+(?:\.\d+)?\b")
 
 
 def fail(msg):
@@ -32,35 +87,163 @@ def fail(msg):
     sys.exit(2)
 
 
-def parse_table(path):
-    rows = []
+def ev_paths(ev):
+    """Extract path-like tokens from an evidence cell. The cell may carry
+    prose ("file.txt (superseded — see X)"); only tokens that look like
+    paths (contain a slash, or a bare name with an extension) are paths."""
+    ext = re.compile(r"^\S+\.\w{1,5}$")
+    out = []
+    for tok in re.split(r"[;\s]+", ev):
+        t = tok.strip().strip("()[]<>\"'.,;:")
+        if not t or t == "-":
+            continue
+        if "/" in t or ext.match(t):
+            out.append(t)
+    return out
+
+
+def read_ev(root, ev):
+    """Return the concatenated text of cited evidence files (empty if none)."""
+    out = []
+    for p in ev_paths(ev):
+        fp = os.path.join(root, p)
+        try:
+            with open(fp, encoding="utf-8", errors="replace") as f:
+                out.append(f.read())
+        except OSError:
+            pass
+    return "\n".join(out)
+
+
+def find_capacity(root):
+    hits = []
+    for dirpath, _dirnames, filenames in os.walk(root):
+        for fn in filenames:
+            if "capacity" in fn and fn.endswith(".tsv"):
+                hits.append(os.path.join(dirpath, fn))
+    hits.sort()
+    return hits[0] if hits else None
+
+
+def parse_capacity(path):
+    d = {}
     with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if not line.startswith("|"):
+            if not line or line.startswith("#"):
                 continue
-            cells = [c.strip() for c in line.strip("|").split("|")]
-            if len(cells) < 3:
+            parts = line.split("\t")
+            if len(parts) >= 2:
+                try:
+                    d[parts[0].strip()] = int(float(parts[1]))
+                except ValueError:
+                    pass
+    return d
+
+
+def check_io_method(claim, ev_text):
+    """Check A: negative-I/O claims need a storage-bytes counter."""
+    cl = claim.lower()
+    if not any(re.search(p, cl) for p in IO_NEG_PATTERNS):
+        return True, ""
+    if any(m in ev_text.lower() for m in STORAGE_MARKERS):
+        return True, ""
+    return (False,
+            "negative-I/O claim but no storage-bytes counter in cited "
+            "evidence (strace/syscall traces cannot see page faults; cite "
+            "/proc/pid/io read_bytes or block-device stats)")
+
+
+def check_residency(claim, root, cap_path, tol):
+    """Check B: full-residency claims need container sum >= object size."""
+    cl = claim.lower()
+    if not any(re.search(p, cl) for p in RESIDENCY_PATTERNS):
+        return True, "", None
+    if cap_path is None:
+        cap_path = find_capacity(root)
+    if not cap_path or not os.path.isfile(cap_path):
+        return (False,
+                "residency claim but no capacity manifest "
+                "(capacity-*.tsv under the campaign root, or --capacity)",
+                None)
+    cap = parse_capacity(cap_path)
+    obj = None
+    for k in OBJECT_KEYS:
+        if k in cap:
+            obj = cap[k]
+            break
+    if obj is None:
+        return (False,
+                f"capacity manifest {cap_path} has no object size "
+                "(model_files_bytes / object_bytes)",
+                cap_path)
+    containers = sum(cap.get(k, 0) for k in CONTAINER_KEYS)
+    if containers == 0:
+        return (False,
+                f"capacity manifest {cap_path} has no container keys "
+                f"({', '.join(CONTAINER_KEYS)})",
+                cap_path)
+    if obj > containers * (1 + tol):
+        return (False,
+                f"residency claim fails arithmetic: object {obj/2**30:.2f} "
+                f"GiB > containers {containers/2**30:.2f} GiB "
+                f"(+{tol:.0%}) — {cap_path}",
+                cap_path)
+    return (True,
+            f"residency ok: object {obj/2**30:.2f} GiB <= "
+            f"containers {containers/2**30:.2f} GiB",
+            cap_path)
+
+
+def ev_numbers(text):
+    nums = []
+    for tok in NUM_RE.findall(text):
+        try:
+            v = float(tok)
+        except ValueError:
+            continue
+        if 1900 <= v <= 2100 and v == int(v):
+            continue  # years
+        nums.append(v)
+    return nums
+
+
+def check_provenance(claim, ev_text, tol):
+    """Check C (warning-only): claim numbers vs evidence numbers."""
+    ev_nums = ev_numbers(ev_text)
+    if not ev_nums:
+        return []
+    ev_sorted = sorted(ev_nums)
+    warnings = []
+    for tok in NUM_RE.findall(claim):
+        try:
+            n = float(tok)
+        except ValueError:
+            continue
+        if 1900 <= n <= 2100 and n == int(n):
+            continue
+        lo, hi = n * (1 - tol), n * (1 + tol)
+        i = bisect.bisect_left(ev_sorted, lo)
+        if i < len(ev_sorted) and ev_sorted[i] <= hi:
+            continue
+        # mean of a pair (small evidence sets only)
+        if len(ev_sorted) <= 300:
+            found = False
+            for a in range(len(ev_sorted)):
+                if found:
+                    break
+                lo2 = 2 * n - ev_sorted[a]
+                j = bisect.bisect_left(ev_sorted, lo2)
+                if j < len(ev_sorted) and abs(ev_sorted[j] - lo2) <= max(abs(lo2), 1) * tol:
+                    found = True
+            if found:
                 continue
-            if set(cells[0]) <= {"#", "-", " ", ":"} or cells[0].lower() == "claim":
-                continue  # header / separator
-            label = cells[2].lower()
-            label = label.split(" (")[0].split(" (")[0]
-            m = re.match(r"^([a-z-]+)", label)
-            label = m.group(1) if m else label
-            if label not in ALL:
-                rows.append((cells[0], cells[1], "unknown", cells[3] if len(cells) > 3 else ""))
-            else:
-                rows.append((cells[0], cells[1], label, cells[3] if len(cells) > 3 else ""))
-    if not rows:
-        fail(f"no claim rows found in {path}")
-    return rows
+        warnings.append(tok)
+    return warnings
 
 
 def check_file(root, ev):
-    for p in ev.split():
-        if p in ("-", ""):
-            continue
+    for p in ev_paths(ev):
         fp = os.path.join(root, p)
         if not os.path.isfile(fp):
             return False, f"{p} missing"
@@ -113,12 +296,42 @@ def check_git(ev):
     return True, ""
 
 
+def parse_table(path):
+    """Parse the claims table. Returns (num, claim, label, ev) rows; label is
+    normalized to its first word so 'predicted (basis: …)' is recognized as
+    predicted (a v2 fix: the v1 gate let annotated predicted rows pass)."""
+    rows = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            s = line.strip()
+            if not (s.startswith("|") and s.endswith("|")):
+                continue
+            cells = [c.strip() for c in s.strip("|").split("|")]
+            if len(cells) < 4:
+                continue
+            num, claim, label, ev = cells[0], cells[1], cells[2], cells[3]
+            if not re.fullmatch(r"C\d+(?:\s*\([^)]*\))?", num):
+                continue
+            raw = label.lower()
+            first = raw.split()[0] if raw.strip() else "unknown"
+            if first not in FINAL:
+                first = "unknown"
+            rows.append((num, claim, first, raw, ev))
+    return rows
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("campaign")
     ap.add_argument("--no-net", action="store_true", help="skip URL checks")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--ledger", default=None)
+    ap.add_argument("--no-narrative", action="store_true",
+                    help="skip the v2 narrative checks (pre-v2 campaigns)")
+    ap.add_argument("--tolerance", type=float, default=0.05,
+                    help="relative tolerance for residency/provenance (default 0.05)")
+    ap.add_argument("--capacity", default=None,
+                    help="capacity manifest TSV (default: auto-detect capacity-*.tsv)")
     args = ap.parse_args()
 
     root = os.path.abspath(args.campaign)
@@ -126,14 +339,18 @@ def main():
     if not os.path.isfile(claims):
         fail(f"{claims} not found")
 
+    cap_path = None
+    if not args.no_narrative:
+        cap_path = args.capacity if args.capacity else find_capacity(root)
+
     results = []
     ok = True
-    for num, claim, label, ev in parse_table(claims):
+    for num, claim, label, rawlabel, ev in parse_table(claims):
         good, why, skipped = True, "", False
         if label == "predicted":
             good, why = False, "unresolved predicted row (must be measured/refuted/not-established)"
         elif label == "unknown":
-            good, why = False, f"unknown label {ev!r}"
+            good, why = False, f"unknown label {rawlabel!r}"
         elif label in NEEDS_FILE:
             good, why = check_file(root, ev)
             if good and ev in ("-", ""):
@@ -144,9 +361,25 @@ def main():
             good, why = check_url(ev, args.no_net)
             if good and args.no_net:
                 skipped = True
-        results.append({"row": num, "claim": claim, "label": label,
+
+        narrative = []
+        if good and not args.no_narrative and label in ("measured", "refuted"):
+            # the prose is checked where this campaign puts it: the claim
+            # cell plus the label cell (notes are written into the label)
+            text = f"{claim} {rawlabel}"
+            ev_text = read_ev(root, ev)
+            a_good, a_why = check_io_method(text, ev_text)
+            b_good, b_why, _ = check_residency(text, root, cap_path, args.tolerance)
+            if not a_good:
+                good, why = False, f"[check A] {a_why}"
+            elif not b_good:
+                good, why = False, f"[check B] {b_why}"
+            narrative = check_provenance(claim, ev_text, args.tolerance)
+
+        results.append({"row": num, "claim": claim, "label": rawlabel,
                         "evidence": ev, "pass": good and not skipped,
-                        "skipped": skipped, "reason": why})
+                        "skipped": skipped, "reason": why,
+                        "provenance_warnings": narrative})
         ok = ok and (good or skipped)
 
     if args.ledger and not args.json:
@@ -168,6 +401,9 @@ def main():
             print(f"[{mark}] {r['row']} ({r['label']}) {r['claim'][:60]}")
             if r["reason"]:
                 print(f"       {r['reason']}")
+            for w in r.get("provenance_warnings", []):
+                print(f"       NOTE (check C, warning-only): number '{w}' in claim "
+                      f"not found ±{args.tolerance:.0%} in cited evidence")
         print(f"\nclaimgate: {'green' if ok else 'red'}: {len(results)} rows")
     sys.exit(0 if ok else 1)
 
