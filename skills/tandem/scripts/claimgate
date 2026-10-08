@@ -310,7 +310,7 @@ def parse_table(path):
             if len(cells) < 4:
                 continue
             num, claim, label, ev = cells[0], cells[1], cells[2], cells[3]
-            if not re.fullmatch(r"C\d+(?:\s*\([^)]*\))?", num):
+            if not re.fullmatch(r"[CS]\d+(?:\s*\([^)]*\))?", num):
                 continue
             raw = label.lower()
             first = raw.split()[0] if raw.strip() else "unknown"
