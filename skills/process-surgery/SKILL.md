@@ -6,8 +6,8 @@ description: >-
 
 # Process surgery
 
-Operating on a **running process on a live host** — stopping an
-interrupted transfer, killing a runaway loop, debugging a live worker —
+Operating on a **running process on a live host** (stopping an
+interrupted transfer, killing a runaway loop, debugging a live worker)
 without taking collateral damage. This is the discipline for the moment
 between "something is running that I want to change" and "the system is
 in the state I want".
@@ -25,9 +25,9 @@ has a scar behind it; the dates and specifics are in the estate section.
 - deciding whether a half-finished job can be **resumed** or must
   restart, and doing that decision safely.
 
-Not for: normal service lifecycle (unit restart, deploy) — that is the
+Not for: normal service lifecycle (unit restart, deploy): that is the
 `prod-service-changes` skill; console-level access to unreachable
-hosts — the `kvm` skill; the design of the data flows themselves (their
+hosts: the `kvm` skill; the design of the data flows themselves (their
 own docs).
 
 ## The six footguns
@@ -47,7 +47,7 @@ verify, in separate commands, never one.
 ### 2. `pkill -P` reaches only direct children
 
 Killing a parent does not reach grandchildren. They **reparent to
-init** and keep running — and they keep holding the parent's file
+init** and keep running, and they keep holding the parent's file
 descriptors, locks, and open files. A "killed" pipeline can leave
 orphaned mid-stage processes that hold a lock file indefinitely or keep
 writing to a destination.
@@ -59,7 +59,7 @@ every level is gone**; check what still holds the lock
 ### 3. Children inherit every open file descriptor
 
 A long-lived child (daemon, background job) that inherits a `flock`
-fd keeps the lock alive **past the parent's death** — every subsequent
+fd keeps the lock alive **past the parent's death**: every subsequent
 "am I the only one running" check says *yes someone is* for as long as
 the child lives. Observed: a 3-hour budget wrapper blocked all
 subsequent runs for its full lifetime after the parent was killed.
@@ -88,7 +88,7 @@ Attaching a tracer to the **leader thread** of a multithreaded process
 process died with "signal received" mid-stream. If you need to know
 what a process is doing, read its **logs**, its `/proc/<pid>/status`
 (`State`, `Threads`), its file descriptors (`/proc/<pid>/fd`), and the
-counterparts on the other end of its pipes — not a tracer.
+counterparts on the other end of its pipes, not a tracer.
 
 ### 6. Kill boundaries belong where the side effect actually is
 
@@ -102,7 +102,7 @@ jobs whose steps are non-destructive until verified.)
 ## The safe procedure (the habit)
 
 1. **Find** by PID, in its own command: `ps -eo pid,ppid,etime,args`
-   (the pattern may appear here — this is a *read* command).
+   (the pattern may appear here; this is a *read* command).
 2. **Map** the tree (pid→ppid) and what it holds: lock files, sockets,
    the other end of any pipe (check the peer host), what it writes to.
 3. **Decide** the signal from footgun 4; know which state you forfeit.
@@ -119,7 +119,7 @@ implements steps 1–5 as one auditable action: it matches the marker
 with a bracketed regex **and excludes its own ancestor chain** (so the
 ssh session that invoked it can never be a match), prints the tree it
 will touch (dry-run mode `-n`), then TERM → drain → re-list → optional
-`-9` escalation. The point is not the script's cleverness — it is that
+`-9` escalation. The point is not the script's cleverness; it is that
 the pattern now lives in a **file on the target**, where it cannot be
 in your command line.
 
@@ -136,7 +136,7 @@ much as the transfer. The pattern this estate converged on:
 - **No `nohup` for anything a cron job spawns.** On some appliance
   hosts (measured: TrueNAS 25.10) a re-exec'd nohup grandchild of a
   cron process lands in a context where common `/bin` utilities
-  (`date`, `awk`, `sleep`) die with `Function not implemented` —
+  (`date`, `awk`, `sleep`) die with `Function not implemented`,
   which turns a retry loop into a busy-spin that hammers its peers.
   Direct cron children and ssh children are fine; **a tmux session
   spawned from cron is fine too** (verified by probe). So: cron tick →
@@ -162,7 +162,7 @@ A surgery is done when, in fresh commands: the target processes are
 gone at every tree level; the lock file answers `fuser` with nothing;
 the peer host shows no more of the pipeline; the destination dataset /
 file is in a **known** state (complete snapshot, saved partial with a
-token, or clean) — and that state is written down, not assumed.
+token, or clean), and that state is written down, not assumed.
 
 ---
 

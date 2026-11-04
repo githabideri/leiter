@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""claimgate — mechanical gate for a tandem campaign's claims table.
+"""claimgate: mechanical gate for a tandem campaign's claims table.
 
 Usage:
   claimgate <campaign-dir> [--no-net] [--json] [--ledger PATH]
@@ -19,18 +19,18 @@ Narrative checks (v2; run on measured/refuted rows; disabled with
 --no-narrative for pre-v2 campaigns). These catch the error class where a
 claim's *prose* contradicts what its cited evidence can prove:
 
-  A. I/O method whitelist — a claim that asserts "no/zero file I/O" (or
+  A. I/O method whitelist: a claim that asserts "no/zero file I/O" (or
      equivalent) requires a storage-bytes counter in the cited evidence
      (/proc/pid/io `read_bytes`/`rchar`, block-device sectors, iostat…).
      Syscall tracing (strace pread counts) cannot see page-fault I/O and
      fails this check on its own.
-  B. Residency arithmetic — a claim asserting that an object "is / fits /
+  B. Residency arithmetic: a claim asserting that an object "is / fits /
      lives entirely in RAM/VRAM/memory" requires a capacity manifest
      (capacity-*.tsv under the campaign root, or --capacity) whose
      measured container sum (cgroup_peak + vram_peak + arc_max, in bytes)
      is >= the object size (model_files_bytes) within --tolerance
      (default 5%). Missing manifest or shortfall = FAIL.
-  C. Numeric provenance (WARNING ONLY, never fails) — every number in the
+  C. Numeric provenance (WARNING ONLY, never fails): every number in the
      claim row must appear within --tolerance in one of the cited evidence
      files (literal or, for small files, the mean of a pair). Unmatched
      numbers are reported; a number that is not in the data is a
@@ -89,7 +89,7 @@ def fail(msg):
 
 def ev_paths(ev):
     """Extract path-like tokens from an evidence cell. The cell may carry
-    prose ("file.txt (superseded — see X)"); only tokens that look like
+    prose ("file.txt (superseded; see X)"); only tokens that look like
     paths (contain a slash, or a bare name with an extension) are paths."""
     ext = re.compile(r"^\S+\.\w{1,5}$")
     out = []
@@ -187,7 +187,7 @@ def check_residency(claim, root, cap_path, tol):
         return (False,
                 f"residency claim fails arithmetic: object {obj/2**30:.2f} "
                 f"GiB > containers {containers/2**30:.2f} GiB "
-                f"(+{tol:.0%}) — {cap_path}",
+                f"(+{tol:.0%}, {cap_path})",
                 cap_path)
     return (True,
             f"residency ok: object {obj/2**30:.2f} GiB <= "

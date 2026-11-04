@@ -1,5 +1,5 @@
 #!/bin/bash
-# safe-kill — stop a process tree by a marker string, without ever
+# safe-kill: stop a process tree by a marker string, without ever
 # matching the caller chain (the ssh session / shell that ran this).
 #
 # The footgun it exists for: `ssh host "pkill -f <pattern>"` matches the
@@ -21,7 +21,7 @@
 #
 # Limitation: a process that is a DESCENDANT of the shell running this
 # (e.g. a worker you started from the same session) is excluded for
-# safety — kill that one by explicit PID.
+# safety: kill that one by explicit PID.
 set -uo pipefail
 
 sig=TERM
@@ -44,7 +44,7 @@ pat="[${marker:0:1}]${marker:1}"
 ppid_of() { ps -o ppid= -p "$1" 2>/dev/null | tr -d ' '; }
 
 # our ancestor chain: us, parent, ... (init is the boundary, NOT a
-# member — including it would exclude every orphan/detached process,
+# member; including it would exclude every orphan/detached process,
 # i.e. exactly the ones we most often need to find)
 mychain() {
     local p=$$
@@ -103,14 +103,14 @@ echo "marker: $marker  (signal: $sig, drain: ${drain}s)"
 targets=$(candidates | while read -r p; do excluded "$p" || echo "$p"; done | sort -n)
 
 if [ -z "$targets" ]; then
-    echo "no matching processes outside our own chain — nothing to do"
+    echo "no matching processes outside our own chain: nothing to do"
     exit 0
 fi
 
 echo "will act on:"
 list_tree
 
-[ "$dry" = 1 ] && { echo "(dry run — no signals sent)"; exit 0; }
+[ "$dry" = 1 ] && { echo "(dry run: no signals sent)"; exit 0; }
 
 for p in $targets; do kill_one "$p"; done
 
@@ -129,10 +129,10 @@ done
 
 if [ -n "$survivors" ]; then
     if [ "$sig" = TERM ]; then
-        echo "survivors after TERM:$survivors — re-run with -9 to force"
+        echo "survivors after TERM: $survivors. Re-run with -9 to force"
         exit 1
     fi
-    echo "still alive after KILL:$survivors (zombie or unkillable — inspect /proc/<pid>)"
+    echo "still alive after KILL:$survivors (zombie or unkillable; inspect /proc/<pid>)"
     exit 1
 fi
 
