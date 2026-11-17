@@ -248,17 +248,21 @@ not the registry's HEAD.
     true;`). Symptom in the log: "Running phase: configurePhase" + "cmake
     flags: …" with none of your -D values, on a build whose buildPhase you
     thought owned the cmake call.
-20. **CMake `set(... CACHE <type>)` clobbers UNINITIALIZED entries.**
-    `set(FOO "" CACHE PATH "doc")` is a no-op for a *typed* cache variable,
-    but it **overwrites an UNINITIALIZED one, which is exactly what a
-    `-DFOO=value` command-line flag creates**; so a project with such a
-    line silently eats the -D value and falls into its default branch. Fix
-    by pre-seeding the build dir's `CMakeCache.txt` with a typed line
-    (`printf 'FOO:PATH=<value>\n' > build/CMakeCache.txt`) before the
-    configure; typed entries survive the project's set(). Verified both
-    ways (repro: -D wins in a bare project only because no such set() is
-    present; the real breakage appears the moment the project has the
-    line).
+20. **CMake `set(var "" CACHE <type> "doc")` is a create-if-absent: it does
+    not modify an existing cache entry of any type**. Verified on CMake 4.4.2
+    in a minimal repro carrying the identical line (both a typed pre-seeded
+    value and a bare `-D` value, which creates an UNINITIALIZED entry,
+survived into the project's conditional). The earlier reading of the Strata
+    build failure as an "UNINITIALIZED clobber" was wrong: every failure was
+    the auto-cmake-hook (item 19), whose unflagged configure ran on an *empty*
+    cache before the custom build phase could pre-seed, so the project's
+    `set(...)` filled the missing entry with `""` and the no-source-dir/
+    FetchContent branch fired. Keep the pre-seeded typed line in
+    `CMakeCache.txt` (`printf 'FOO:PATH=<value>\n' > build/CMakeCache.txt`
+    before the configure) as hygiene: it is the one form visible in the cache
+    at a glance and immune to any later non-FORCE set. Caveat: if a fresh
+    configure gets both the cache file and a `-D` for the same name, the `-D`
+    wins and rewrites the entry back to type UNINITIALIZED (value kept).
 21. **Source-pin hygiene for fetchTarball:** the `sha256` field must be the
     value *nix's fetcher* computes; take it from the mismatch report's
     "got:" line, not from `sha256sum` plus a manual base64/hex/
