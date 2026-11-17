@@ -10,7 +10,7 @@ Read this before touching a 2024.11.x box; do not re-derive it by trial.
 | Change | Lever that loads it |
 |---|---|
 | YAML files (automations, scripts, scenes, …) | **UI "Reload YAML" button**: works in 2024.11. New/edited YAML automations load without a restart. |
-| `.storage` stores: lovelace dashboards, entity/device/area registries, config entries, energy store | **Full core restart only.** A YAML reload does not re-read these; the core reads them at boot. Unmodified stores are not rewritten on shutdown, so on-disk edits survive a restart. |
+| `.storage` stores: lovelace dashboards, entity/device/area registries, config entries, energy store | **Full core restart only.** A YAML reload does not re-read these; the core reads them at boot. Unmodified stores are not rewritten on shutdown, so on-disk edits survive a restart. But a **modified** store (any UI save during the session) is written back from memory on every change and again on shutdown, clobbering on-disk edits, and a dashboard has no API at all: a file edit to a live dashboard applies only at the next boot and any UI interaction in between can overwrite it. So a live-dashboard change is either one atomic step (edit and restart in the same pass, no use in between) or a UI edit, which applies immediately and whose save is the durable one. |
 | A dashboard page in an open browser | **Full page reload (F5 / hard refresh).** The frontend fetches dashboard config only on page load; a core restart does not push a new config to an already-open page. |
 
 ## External API surface (measured, all dead except webhooks)
@@ -69,7 +69,10 @@ Read this before touching a 2024.11.x box; do not re-derive it by trial.
   **rotated on every boot** (current + one previous; older boots are lost), and
   a zero-byte `.fault` file marks a death. No traceback in the log = the
   process was killed or aborted without writing (a signal, or the event-loop
-  thread died after the last log line).
+  thread died after the last log line). One refinement measured on 2024.11.1:
+  a *normal* s6 supervisor restart also leaves a zero-byte `.fault` and no
+  clean "stopped" line, so compare the shape against the last known-healthy
+  boot's log before calling it a crash.
 - A custom component that does blocking work in a `HOMEASSISTANT_STARTED`
   callback, e.g. a config scanner that recursively walks the whole config
   directory, can kill the entire process mid-boot: unhandled exception (or a
