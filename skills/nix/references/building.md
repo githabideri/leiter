@@ -23,12 +23,12 @@ nixpkgs already packages it. nixpkgs of the 26.11 era (c8ccf87, 2026-09-19;
 measured in the 2026-11-17 bd775i session) carries a full **CUDA 13.0** set
 under `pkgs.cudaPackages_13_0`:
 
-- **`cudatoolkit`** — a *merged prefix* (`cuda-merged-13.0`): the one
+- **`cudatoolkit`**: a *merged prefix* (`cuda-merged-13.0`): the one
   `/usr/local/cuda`-style tree that `find_package(CUDAToolkit)` expects.
 - **components**: `cuda_nvcc` (13.0.88), `cuda_cudart`, `libcublas`,
   `cuda_cccl`, `cuda_crt`, `cuda_nvrtc`, `cuda_nvtx`, `cuda_nvml_dev`,
   `cuda_compat`, …
-- **`backendStdenv`** — the stdenv for compiling CUDA; its host cc is the
+- **`backendStdenv`**: the stdenv for compiling CUDA; its host cc is the
   era the toolkit was validated against (this pin: gcc 15.3.0; CUDA 13.0
   supports GCC up to 15).
 - The glibc-2.42 `noexcept`/`rsqrt` header clash (item 6) is **patched
@@ -40,7 +40,7 @@ under `pkgs.cudaPackages_13_0`:
   probes can report "missing" when a thunk dies on the unfree gate).
   Permitted by `nixpkgs.config.allowUnfree = true` (declarative; tighten to
   an `allowUnfreePredicate` over `cuda-*`/`nvidia-*` when you can) or
-  `NIXPKGS_ALLOW_UNFREE=1` — which flake-mode commands (nix 2.34+) only see
+  `NIXPKGS_ALLOW_UNFREE=1`, which flake-mode commands (nix 2.34+) only see
   with `--impure`.
 
 The deb-assembly recipe (item 4) stays valid for pins without the packaging
@@ -196,30 +196,29 @@ not the registry's HEAD.
     cleanup) satisfies `-lcuda` / driver-API symbols at link time; at
     runtime the real `libcuda.so.1` out of `/run/opengl-driver/lib` loads.
     Linking straight to the installed driver's lib (item 5's workaround for
-    the hand-assembled toolkit) couples the binary to one driver store path
-    — do it only when no stub exists, and make sure the stub's directory
+    the hand-assembled toolkit) couples the binary to one driver store path; do it only when no stub exists, and make sure the stub's directory
     never lands in the runtime search path (loading a stub at runtime is a
     silent no-GPU failure).
 15. **GC and store paths in RPATH (refines item 12):** Nix *does* extract
     store-path references from output contents (including RPATH strings), so
-    an RPATH into the store is tracked — *provided the referenced path is
+    an RPATH into the store is tracked, *provided the referenced path is
     inside the derivation's closure*. The omen-15 breakage was a
     *different pin's* glibc/gcc path the new system closure no longer
     carried. Rule: keep every runtime lib inside the active system's closure
     (declarative units referencing store outputs); never hand-bind or patch
     to paths outside the closure.
 16. **Python serving layers:** `python3.withPackages` (present on
-    26.11/c8ccf87 — measured) is the robust pattern for a store-built
+    26.11/c8ccf87, measured) is the robust pattern for a store-built
     service that wraps a C/C++ engine: one derivation, no venv, no
     patchelf, GC-safe. It follows *nixpkgs'* dependency versions, not the
-    project's `requirements.txt` wheel pins — usually desirable, but
+    project's `requirements.txt` wheel pins; usually desirable, but
     document the difference or a runtime regression gets misfiled as an
     engine regression. The venv+patchelf dance (omen-15 `strata.nix`) is
     only for engines that are out-of-store builds whose interpreter the
     stub-ld would otherwise refuse.
 17. **CMake-4-era CUDA projects:** if the project uses
     `enable_language(CUDA)` + `find_package(CUDAToolkit REQUIRED)` (the
-    modern path), nixpkgs 26.11's CMake 4.4.x is fine — item 7's fragility
+    modern path), nixpkgs 26.11's CMake 4.4.x is fine; item 7's fragility
     was specific to *hand-assembled* toolkits with empty-arg probes. Give
     CMake the merged toolkit (`CUDAToolkit_ROOT` / `CMAKE_PREFIX_PATH`
     pointing at the `cudatoolkit` output) plus `-DCMAKE_CUDA_COMPILER=<nvcc>`.
@@ -228,13 +227,47 @@ not the registry's HEAD.
     directories with explicit configure/build phases, not the single-tree
     cmake derivation hook. A `requirements.txt` that pins `cmake`/`ninja`
     *wheels* describes the project's installer environment, not its build
-    requirements — use nix's cmake/ninja. A pinned third-party source (a
+    requirements: use nix's cmake/ninja. A pinned third-party source (a
     vendored llama.cpp commit and friends) is a flake input passed as the
     source-dir argument.
 18. **Native vs portable CPU code:** engines that compile their CPU side
     *natively for the build machine* ("build it on the PC it runs on") are
-    faithful when the derivation builds on the target box itself — and are
+    faithful when the derivation builds on the target box itself, and are
     **not reproducible on other builders** (different CPU features). For a
     dedicated node, choose deliberately (native on the box, or an explicit
     portable baseline) and write the choice into the derivation, instead of
     letting whichever builder nix picks decide.
+19. **The automatic cmake hook runs before your buildPhase.** stdenv enables
+    its cmake configure/build hooks (triggered by cmake in nativeBuildInputs
+    plus project detection and the CUDA setup hooks); its configurePhase
+    runs its own `cmake` with only the collected default flags, and dies
+    on any project whose CMakeLists needs flags the hook doesn't pass
+    (e.g. a FetchContent fallback the sandbox forbids); before your custom
+    buildPhase ever executes. When you drive CMake yourself in buildPhase,
+    disable the hooks (`dontUseCmakeConfigure = true; dontUseCmakeBuild =
+    true;`). Symptom in the log: "Running phase: configurePhase" + "cmake
+    flags: …" with none of your -D values, on a build whose buildPhase you
+    thought owned the cmake call.
+20. **CMake `set(... CACHE <type>)` clobbers UNINITIALIZED entries.**
+    `set(FOO "" CACHE PATH "doc")` is a no-op for a *typed* cache variable,
+    but it **overwrites an UNINITIALIZED one, which is exactly what a
+    `-DFOO=value` command-line flag creates**; so a project with such a
+    line silently eats the -D value and falls into its default branch. Fix
+    by pre-seeding the build dir's `CMakeCache.txt` with a typed line
+    (`printf 'FOO:PATH=<value>\n' > build/CMakeCache.txt`) before the
+    configure; typed entries survive the project's set(). Verified both
+    ways (repro: -D wins in a bare project only because no such set() is
+    present; the real breakage appears the moment the project has the
+    line).
+21. **Source-pin hygiene for fetchTarball:** the `sha256` field must be the
+    value *nix's fetcher* computes; take it from the mismatch report's
+    "got:" line, not from `sha256sum` plus a manual base64/hex/
+    `nix hash convert` chain (that chain produces a different-looking
+    value for the same bytes on current nix; `nix hash convert` takes a
+    hash, not a file, and `--to nix32` is 32 chars for sha1, 52 for
+    sha256). GitHub **regenerates archive tarballs**: the same commit's
+    tarball changed NAR between sessions (different file mtimes), so a pin
+    can break without any code change: re-derive the hash from the
+    fresh "got:" line and note the drift in the commit message. Verify
+    stability with two consecutive `nix flake prefetch <url>` runs (same
+    store path both times = stable for now).

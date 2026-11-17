@@ -9,7 +9,7 @@ Read this before touching a 2024.11.x box; do not re-derive it by trial.
 
 | Change | Lever that loads it |
 |---|---|
-| YAML files (automations, scripts, scenes, …) | **UI "Reload YAML" button** — works in 2024.11. New/edited YAML automations load without a restart. |
+| YAML files (automations, scripts, scenes, …) | **UI "Reload YAML" button**: works in 2024.11. New/edited YAML automations load without a restart. |
 | `.storage` stores: lovelace dashboards, entity/device/area registries, config entries, energy store | **Full core restart only.** A YAML reload does not re-read these; the core reads them at boot. Unmodified stores are not rewritten on shutdown, so on-disk edits survive a restart. |
 | A dashboard page in an open browser | **Full page reload (F5 / hard refresh).** The frontend fetches dashboard config only on page load; a core restart does not push a new config to an already-open page. |
 
@@ -19,7 +19,7 @@ Read this before touching a 2024.11.x box; do not re-derive it by trial.
 - REST `/api/command`, `/api/config/*` (incl. automations), `/api/lovelace`: 404
   (views not mounted in this build).
 - WebSocket classic `{"type": "service_call", ...}` after a successful `auth`
-  handshake: **`unknown_command`** in 2024.11.1 — despite generic help texts and
+  handshake: **`unknown_command`** in 2024.11.1, despite generic help texts and
   older notes claiming otherwise. The newer `command` envelope is present but no
   service/automation command types are registered (`unknown_command` for both).
 - The one POST the API accepts: **webhooks** (no auth, no JSON body parsing).
@@ -28,34 +28,34 @@ Read this before touching a 2024.11.x box; do not re-derive it by trial.
 
 ## Core-restart levers (HAOS)
 
-- **UI / mobile-app restart** — the supported path. Add-ons are separate
+- **UI / mobile-app restart**: the supported path. Add-ons are separate
   containers and are not affected; integrations reconnect.
 - **OS `ha` CLI**: `ha core` *lists* only check/info/logs/options/rebuild, but
   **`ha core restart` is a hidden verb that exists and works** (probe with
-  `ha core restart --help` — the description block advertises start/stop/restart
+  `ha core restart --help`: the description block advertises start/stop/restart
   without listing them as subcommands). The estate `ha` CLI's
   `supervisor core restart` wraps exactly this.
-- **No docker CLI in the HAOS host shell** — `docker restart core-*` is not a
+- **No docker CLI in the HAOS host shell**: `docker restart core-*` is not a
   lever here (that pattern is for bare-metal docker-HA installs, not HAOS).
 - `ha supervisor restart` restarts the supervisor, not the core.
 
 ## Z2M: renaming a device (new API, 1.17+/1.4x)
 
 - In entity-naming mode the Z2M integration **re-syncs the device-registry name
-  from Z2M's `friendly_name` on every reconnect** — a registry-only rename gets
+  from Z2M's `friendly_name` on every reconnect**: a registry-only rename gets
   clobbered (measured: renamed on disk, reverted after the core's Z2M reconnect).
 - The documented rename endpoint (new API): publish to
   **`zigbee2mqtt/bridge/request/device/rename`** with
   `{"from": "<ieee or old name>", "to": "<new name>", "homeassistant_rename": true}`.
   Response arrives on `zigbee2mqtt/bridge/response/device/rename`
-  (`{"data":{...},"status":"ok"}`) — that is your verification. With
+  (`{"data":{...},"status":"ok"}`); that is your verification. With
   `homeassistant_rename: true` the HA integration migrates the entity ids to
   the new name; every reference outside discovery (YAML automations, lovelace
   card ids, energy store) must be updated in the same step anyway.
 - Other device options go to `zigbee2mqtt/bridge/request/device/options`
   (`{"id": ..., "options": {...}}`); some set `restart_required: true`.
 - The legacy per-device `zigbee2mqtt/<name>/config` topic is pre-1.17 and is not
-  documented for the new API — do not rely on it on 1.4x. Publishing to the
+  documented for the new API; do not rely on it on 1.4x. Publishing to the
   state topic `zigbee2mqtt/<name>` is **not** a command (see estate notes).
 - On HAOS the broker credentials are not in a visible config file; the add-on's
   config entry (`.storage/core.config_entries`, `birth_message` field)
@@ -71,8 +71,8 @@ Read this before touching a 2024.11.x box; do not re-derive it by trial.
   process was killed or aborted without writing (a signal, or the event-loop
   thread died after the last log line).
 - A custom component that does blocking work in a `HOMEASSISTANT_STARTED`
-  callback — e.g. a config scanner that recursively walks the whole config
-  directory — can kill the entire process mid-boot: unhandled exception (or a
+  callback, e.g. a config scanner that recursively walks the whole config
+  directory, can kill the entire process mid-boot: unhandled exception (or a
   blocking `open()` on a file being written) → death before "Home Assistant
   started", no web listener. Under s6 supervision this looks like a **crash
   loop with growing backoff** (retries tens of minutes apart), which reads as
@@ -85,7 +85,7 @@ Read this before touching a 2024.11.x box; do not re-derive it by trial.
 - To disable a misbehaving custom integration without its UI: in
   `.storage/core.config_entries`, set `"disabled_by":"user"` inside the entry's
   JSON object (back the file up; the core skips disabled entries at boot). The
-  key order in that file is not stable — anchor the edit on
+  key order in that file is not stable; anchor the edit on
   `"domain":"<name>"` and **verify the result with a grep**; an unverified
   in-place edit is the kind of thing that silently changes nothing.
 - Forensics footgun: a monitoring loop that greps `/proc/*/cmdline` for the

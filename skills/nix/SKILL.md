@@ -16,7 +16,7 @@ nodes (mini PCs, old laptops) running inference.
 | Preparing the install stick (hidden payload, iwd network file, PSK extraction, human-input budget) | `references/install-stick.md` |
 | Which nixpkgs/nixOS pin to use; module-system / option-name quirks per generation (the 26.05 nvidia crash, sops stub, tmpfiles format, 26.11 unit changes, the /bin bash trap) | `references/nixpkgs-pins.md` |
 | Building/running non-Nix software (CUDA, llama.cpp, any generic binary), or any "why does X fail on NixOS" (stub-ld, ld.so.cache, rpath) | `references/building.md` |
-| "nixos-rebuild boot succeeded but the box still boots the old generation" — UEFI firmware that owns its boot entries (vendor-GUID NVRAM, efivars reads that hang the kernel, the initrd content-swap fix) | `references/uefi-boot-nvram-wedged-firmware.md` |
+| "nixos-rebuild boot succeeded but the box still boots the old generation": UEFI firmware that owns its boot entries (vendor-GUID NVRAM, efivars reads that hang the kernel, the initrd content-swap fix) | `references/uefi-boot-nvram-wedged-firmware.md` |
 | The provisioning flow itself | this file |
 
 The dated references are snapshots: re-verify a specific claim before
