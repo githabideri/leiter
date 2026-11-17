@@ -1,10 +1,12 @@
 # Nixpkgs / nixOS pins: per-generation quirks
 
 Which pin to use and the module-system / option quirks that come with it.
-**Dated knowledge: last verified 2026-09-27 against nixos-unstable
-e158d9ed ("26.11.20260926"; note: the machine's branch pin had moved on
-its own from e94cb152) and nixpkgs 26.05 (c508844). Re-verify before
-relying on a claim for a *new* pin; pins move.** Full narrative: see the provisioning report of the session that ran it.
+**Dated knowledge: last verified 2026-11-17 against the bd775i's nixpkgs
+c8ccf87 (2026-09-19, the rev the nixos-unstable input actually follows),
+2026-09-27 against nixos-unstable e158d9ed ("26.11.20260926") and nixpkgs
+26.05 (c508844). Re-verify before relying on a claim for a *new* pin; pins
+move.** Full narrative: see the provisioning report of the session that ran
+it.
 
 ## Pin policy (the settings repo)
 
@@ -98,3 +100,46 @@ relying on a claim for a *new* pin; pins move.** Full narrative: see the provisi
     Use the **gcc-wrapper** path (`…-gcc-wrapper-*/bin/cc`), or add the
     matching binutils store dir to PATH. (glibc-2.42-era gcc is fine for
     scratch C; production binaries keep the 24.05 toolchain.)
+
+## Which nixpkgs does your flake actually use (forensics, 2026-11)
+
+"nixpkgs has no X" is only true for the nixpkgs you actually asked.
+2026-11-17 (bd775i session): `nixpkgs#cuda` → "attribute missing" was checked
+against the *registry's* HEAD, while the system was built from a different
+rev — and the pinned rev **did** carry the CUDA 13.0 packaging
+(`pkgs.cudaPackages_13_0`, verified by forcing the attributes to store
+paths). The recipe to never chase a false negative again:
+
+1. **`nixpkgs#` (nix 2.34+) is the flake registry's HEAD, not your pin.**
+   Always evaluate the rev in your project's flake.lock.
+2. **A flake.lock can carry several `nixpkgs` nodes** (the repo's own
+   input; `nixpkgs_2`-style disambiguation; inputs of inputs). Which one
+   feeds the *system* is decided by input-following: in the nixos-settings
+   flake the `nixos-unstable` input **follows** `nixos-anywhere/nixpkgs`
+   (c8ccf87) — that is the pkgs the `nixos-rebuild --flake` system is built
+   from — while the repo's own `nixpkgs` input (e158d9e) and the
+   `nixos-stable` input (cf9d2fb3) serve other things. `nix flake
+   metadata .` prints the follow graph; trust it over node names.
+3. **nix3 short hashes are not fetchurl hashes.** Lock-file narHashes in
+   the nix3 era are *short* base32 (43 chars for sha256, trailing `=`);
+   `builtins.fetchurl` (nix2 style) wants the classic 52-char form and
+   rejects the short one ("wrong length for hash algorithm"). Don't
+   transcribe by hand — fetch via the flake fetcher, which validates the
+   short form:
+   `nix path-info 'github:NixOS/nixpkgs/<rev>?narHash=sha256-<short>='`
+   (one-time git clone into the flake cache, minutes).
+4. **Flake URL outputs:** `#legacyPackages.x86_64-linux.<attr>` works with
+   `nix eval` (`--raw` for store paths, `--apply` for filtering). Bare
+   top-level names like `#cudaPackages_13_0` are *not* flake outputs; and
+   `nix path-info` only accepts outputs that are paths or derivations (the
+   pkgs *set* is rejected with "found a set"). To find a source's store
+   path: match the lock's narHash against `nix path-info --json --all`
+   (field `narHash` per path) — and expect the source to have been GC'd
+   (`nixos-rebuild` runs `nix-collect-garbage` after every switch; a
+   source that only fed evaluation is not necessarily a GC root).
+5. **Env vars need `--impure` in flake mode** (e.g.
+   `NIXPKGS_ALLOW_UNFREE=1 nix eval --impure …`); and forcing an
+   *unfree-licensed* package to a store path dies in the
+   `customisation.nix` assert **with the package name in the error** —
+   which is itself proof the attribute exists (naive `? a` / `or {}`
+   probes can report "missing" for a thunk that died on the unfree gate).

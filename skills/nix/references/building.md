@@ -2,15 +2,51 @@
 
 How to compile and run generic (non-Nix) software on a NixOS box:
 toolchains, CUDA, linker/loader traps. **Dated knowledge: last verified
-2026-09-27 (CUDA 12.9 + driver 580.178.04 on the nixos-unstable pin;
-llama.cpp upstream main 86a24a1 + GenerelSchwerz moe-cache branch).
-Re-verify for a new pin.** Full narrative: see the provisioning report of the session that ran it.
+2026-11-17 (nixpkgs c8ccf87/26.11: the pin ships the full CUDA 13.0 set as
+`pkgs.cudaPackages_13_0`; see "Check first" below), 2026-09-27 (CUDA 12.9 +
+driver 580.178.04 on the nixos-unstable pin; llama.cpp upstream main
+86a24a1 + GenerelSchwerz moe-cache branch). Re-verify for a new pin.**
+Full narrative: see the provisioning report of the session that ran it.
 
 TOC: (1-2) loader/linker traps (stub-ld, ld.so.cache, rpath vs RUNPATH) ·
-(4-7) CUDA toolkits (deb assembly, Pascal ceiling, stubs/libcuda, glibc-2.42
-vs CUDA headers, CMake 4.x) · (8-10) shell/orchestration (pkill self-kill,
-heredocs over ssh, timeout+env) · (11) solved llama-server cublasCreate
-anomaly + 2026 flag renames.
+(4-7) CUDA toolkits (check the pin first, deb assembly, Pascal ceiling,
+stubs/libcuda, glibc-2.42 vs CUDA headers, CMake 4.x) · (8-10)
+shell/orchestration (pkill self-kill, heredocs over ssh, timeout+env) ·
+(11) solved llama-server cublasCreate anomaly + 2026 flag renames ·
+(13-18) 2026-11 refinements (driver stub vs real lib, dlopen/RUNPATH, GC,
+python, CMake-4 projects, native builds).
+
+## Check first: your nixpkgs pin may already ship the CUDA toolkit (2026-11)
+
+Before assembling a toolkit from `.deb` (item 4), check whether the **pinned**
+nixpkgs already packages it. nixpkgs of the 26.11 era (c8ccf87, 2026-09-19;
+measured in the 2026-11-17 bd775i session) carries a full **CUDA 13.0** set
+under `pkgs.cudaPackages_13_0`:
+
+- **`cudatoolkit`** — a *merged prefix* (`cuda-merged-13.0`): the one
+  `/usr/local/cuda`-style tree that `find_package(CUDAToolkit)` expects.
+- **components**: `cuda_nvcc` (13.0.88), `cuda_cudart`, `libcublas`,
+  `cuda_cccl`, `cuda_crt`, `cuda_nvrtc`, `cuda_nvtx`, `cuda_nvml_dev`,
+  `cuda_compat`, …
+- **`backendStdenv`** — the stdenv for compiling CUDA; its host cc is the
+  era the toolkit was validated against (this pin: gcc 15.3.0; CUDA 13.0
+  supports GCC up to 15).
+- The glibc-2.42 `noexcept`/`rsqrt` header clash (item 6) is **patched
+  upstream already** in `cuda_crt` for CUDA < 13.2; the era-mismatched
+  24.05-stdenv workaround was for the hand-assembled toolkit.
+- **Unfree license (CUDA EULA)**: forcing a package to a store path fails
+  in the `customisation.nix` assert *with the package name in the error*
+  (that error is also proof the attribute exists; naive `? a` / `or {}`
+  probes can report "missing" when a thunk dies on the unfree gate).
+  Permitted by `nixpkgs.config.allowUnfree = true` (declarative; tighten to
+  an `allowUnfreePredicate` over `cuda-*`/`nvidia-*` when you can) or
+  `NIXPKGS_ALLOW_UNFREE=1` — which flake-mode commands (nix 2.34+) only see
+  with `--impure`.
+
+The deb-assembly recipe (item 4) stays valid for pins without the packaging
+or versions nixpkgs does not carry (the omen-15 12.9 assembly predates it).
+See `nixpkgs-pins.md` for how to be sure you asked the *pinned* nixpkgs,
+not the registry's HEAD.
 
 ## Loader & linker traps (the "why does any foreign binary fail")
 
@@ -141,3 +177,64 @@ anomaly + 2026 flag renames.
     literally). Also: the 2026 llama.cpp "binaries" are **~20 KB
     launcher stubs** next to their `lib*-impl` / `libggml-*` shared
     libs: install the *whole bin set*, not the stub.
+
+## 2026-11 refinements (CUDA driver, dlopen, GC, python, CMake)
+
+13. **dlopen and RUNPATH (refines item 3):** glibc resolves a `dlopen()`
+    with the *calling object's* RPATH/RUNPATH; the main executable's
+    RUNPATH is not necessarily consulted when a *loaded library* dlopens
+    (dlopen(3)). "Patch the executable with `--force-rpath`" is therefore a
+    one-trick fix. The robust arrangement for *driver* libraries is the
+    NixOS-managed **`/run/opengl-driver/lib`** (the live nvidia userspace
+    driver) exposed via the service's `LD_LIBRARY_PATH` (or
+    `autoAddCudaCompatRunpath` where applicable): that path is kept alive by
+    the *system configuration*, so it survives rebuilds and GC, unlike a
+    store path you bind-mounted yourself.
+14. **Link against the driver *stub*, not the installed driver lib.**
+    The toolkit's `stubs/libcuda.so` (in nixpkgs: the driver-dev packaging;
+    their `cuda_cudart` packaging includes the driver-link handling and stub
+    cleanup) satisfies `-lcuda` / driver-API symbols at link time; at
+    runtime the real `libcuda.so.1` out of `/run/opengl-driver/lib` loads.
+    Linking straight to the installed driver's lib (item 5's workaround for
+    the hand-assembled toolkit) couples the binary to one driver store path
+    — do it only when no stub exists, and make sure the stub's directory
+    never lands in the runtime search path (loading a stub at runtime is a
+    silent no-GPU failure).
+15. **GC and store paths in RPATH (refines item 12):** Nix *does* extract
+    store-path references from output contents (including RPATH strings), so
+    an RPATH into the store is tracked — *provided the referenced path is
+    inside the derivation's closure*. The omen-15 breakage was a
+    *different pin's* glibc/gcc path the new system closure no longer
+    carried. Rule: keep every runtime lib inside the active system's closure
+    (declarative units referencing store outputs); never hand-bind or patch
+    to paths outside the closure.
+16. **Python serving layers:** `python3.withPackages` (present on
+    26.11/c8ccf87 — measured) is the robust pattern for a store-built
+    service that wraps a C/C++ engine: one derivation, no venv, no
+    patchelf, GC-safe. It follows *nixpkgs'* dependency versions, not the
+    project's `requirements.txt` wheel pins — usually desirable, but
+    document the difference or a runtime regression gets misfiled as an
+    engine regression. The venv+patchelf dance (omen-15 `strata.nix`) is
+    only for engines that are out-of-store builds whose interpreter the
+    stub-ld would otherwise refuse.
+17. **CMake-4-era CUDA projects:** if the project uses
+    `enable_language(CUDA)` + `find_package(CUDAToolkit REQUIRED)` (the
+    modern path), nixpkgs 26.11's CMake 4.4.x is fine — item 7's fragility
+    was specific to *hand-assembled* toolkits with empty-arg probes. Give
+    CMake the merged toolkit (`CUDAToolkit_ROOT` / `CMAKE_PREFIX_PATH`
+    pointing at the `cudatoolkit` output) plus `-DCMAKE_CUDA_COMPILER=<nvcc>`.
+    A project with **two independent CMake trees** (an engine plus a
+    secondary target, e.g. a vision encoder) wants two clean build
+    directories with explicit configure/build phases, not the single-tree
+    cmake derivation hook. A `requirements.txt` that pins `cmake`/`ninja`
+    *wheels* describes the project's installer environment, not its build
+    requirements — use nix's cmake/ninja. A pinned third-party source (a
+    vendored llama.cpp commit and friends) is a flake input passed as the
+    source-dir argument.
+18. **Native vs portable CPU code:** engines that compile their CPU side
+    *natively for the build machine* ("build it on the PC it runs on") are
+    faithful when the derivation builds on the target box itself — and are
+    **not reproducible on other builders** (different CPU features). For a
+    dedicated node, choose deliberately (native on the box, or an explicit
+    portable baseline) and write the choice into the derivation, instead of
+    letting whichever builder nix picks decide.
