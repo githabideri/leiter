@@ -8,7 +8,7 @@ keeps its own `OldBootOrder`/`DefaultBootOrder` variables alongside the
 standard ones, which is a tell that it is managing the list itself).
 
 Symptom in NixOS: `nixos-rebuild boot` finishes successfully ("Done. The new
-configuration is ..."), but the next reboot boots the **old** generation —
+configuration is ..."), but the next reboot boots the **old** generation:
 `/run/booted-system` keeps pointing at the old store path, no matter what
 `/boot/loader/` says.
 
@@ -35,7 +35,7 @@ configuration is ..."), but the next reboot boots the **old** generation —
    content-addressed across generations: same nixpkgs pin + same
    `hardware-configuration` = same kernel build = one shared bzImage. The
    **initrd differs per generation** (it embeds the activation and the system
-   closure) — that is the lever.
+   closure); that is the lever.
 
 ## The fix: content swap at the stable path
 
@@ -56,7 +56,7 @@ Practical notes:
 - As a second boot path (in case the firmware ever falls through to the
   default loader), prune `/loader/entries/` to the current generation's
   `.conf` and keep `loader.conf`'s `default` on it. This alone is **not**
-  the fix on such a box — the vendor entry wins — but it keeps the fallback
+  the fix on such a box (the vendor entry wins), but it keeps the fallback
   path honest. Back up the removed `.conf` files.
 - If a future rebuild changes the kernel build (new nixpkgs pin, changed
   hardware config), the ESP gains a new bzImage and the old one stays
