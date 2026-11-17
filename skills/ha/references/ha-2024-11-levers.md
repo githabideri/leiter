@@ -39,15 +39,59 @@ Read this before touching a 2024.11.x box; do not re-derive it by trial.
   lever here (that pattern is for bare-metal docker-HA installs, not HAOS).
 - `ha supervisor restart` restarts the supervisor, not the core.
 
-## Z2M integration: name ownership
+## Z2M: renaming a device (new API, 1.17+/1.4x)
 
 - In entity-naming mode the Z2M integration **re-syncs the device-registry name
   from Z2M's `friendly_name` on every reconnect** — a registry-only rename gets
   clobbered (measured: renamed on disk, reverted after the core's Z2M reconnect).
-- The working rename path: Z2M `device/options` (`friendly_name`) or
-  `bridge/request/<area>/device/rename` with `homeassistant_rename: true` (that
-  one also changes the HA entity ids → every reference — automations, lovelace
-  cards, energy store — must be updated in the same step).
+- The documented rename endpoint (new API): publish to
+  **`zigbee2mqtt/bridge/request/device/rename`** with
+  `{"from": "<ieee or old name>", "to": "<new name>", "homeassistant_rename": true}`.
+  Response arrives on `zigbee2mqtt/bridge/response/device/rename`
+  (`{"data":{...},"status":"ok"}`) — that is your verification. With
+  `homeassistant_rename: true` the HA integration migrates the entity ids to
+  the new name; every reference outside discovery (YAML automations, lovelace
+  card ids, energy store) must be updated in the same step anyway.
+- Other device options go to `zigbee2mqtt/bridge/request/device/options`
+  (`{"id": ..., "options": {...}}`); some set `restart_required: true`.
+- The legacy per-device `zigbee2mqtt/<name>/config` topic is pre-1.17 and is not
+  documented for the new API — do not rely on it on 1.4x. Publishing to the
+  state topic `zigbee2mqtt/<name>` is **not** a command (see estate notes).
+- On HAOS the broker credentials are not in a visible config file; the add-on's
+  config entry (`.storage/core.config_entries`, `birth_message` field)
+  carries the `user=...\npassword=...` line. Extract with an anchored parse
+  (the password may contain `/`; do not use it as a sed delimiter).
+
+## Boot forensics on HAOS (2024.11)
+
+- The core runs in its own environment: the host root shell has **no python3**,
+  only the compiled `ha` bridge. The core log is `/homeassistant/home-assistant.log`,
+  **rotated on every boot** (current + one previous; older boots are lost), and
+  a zero-byte `.fault` file marks a death. No traceback in the log = the
+  process was killed or aborted without writing (a signal, or the event-loop
+  thread died after the last log line).
+- A custom component that does blocking work in a `HOMEASSISTANT_STARTED`
+  callback — e.g. a config scanner that recursively walks the whole config
+  directory — can kill the entire process mid-boot: unhandled exception (or a
+  blocking `open()` on a file being written) → death before "Home Assistant
+  started", no web listener. Under s6 supervision this looks like a **crash
+  loop with growing backoff** (retries tens of minutes apart), which reads as
+  "the box is dead".
+- A slow boot is normal: many HACS repos make the boot phase print `json_loads`
+  deprecation warnings for minutes, and the API is legitimately down for a
+  while after start. **Do not restart mid-boot**: every restart resets the
+  boot clock. When diagnosing a suspected crash loop, monitor read-only
+  (poll the API, tail the log, inspect /proc) and give one boot 10–15 minutes.
+- To disable a misbehaving custom integration without its UI: in
+  `.storage/core.config_entries`, set `"disabled_by":"user"` inside the entry's
+  JSON object (back the file up; the core skips disabled entries at boot). The
+  key order in that file is not stable — anchor the edit on
+  `"domain":"<name>"` and **verify the result with a grep**; an unverified
+  in-place edit is the kind of thing that silently changes nothing.
+- Forensics footgun: a monitoring loop that greps `/proc/*/cmdline` for the
+  target process matches its own grep (the pattern is in its own cmdline) and
+  reports a dead box as alive. Match on the `comm` file or an anchored
+  pattern instead.
 
 ## YAML gotchas that bite in automations (HA 2024.11 parser)
 
