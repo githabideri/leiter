@@ -182,6 +182,18 @@ scheme in the registry's header so the next operator inherits it.
   named snapshot; the rollback target exists before the risk does.
 - **Read the machine first.** A guest in a strange state: read its
   status, its task history, its storage state. Not your theory.
+- **Sign off a new guest on DNS before calling it done.** A freshly
+  created guest must resolve one name from each DNS zone the estate uses
+  (an estate with a tailnet/MagicDNS plane has at least a public zone,
+  a private-domain zone, and the tailnet zone), and the in-guest resolver
+  chain that makes that true must be explicit and persistent (not
+  inherited from the host, which a PVE host running Tailscale will
+  pollute). The estate's *dns* skill defines the concrete three-zone
+  test and the chain shape; the new-guest flow in this skill's
+  *references* ends with that sign-off step. A guest whose only resolver
+  is the LAN router will silently fail the tailnet zone for weeks until
+  the first thing that needs a tailnet hostname runs; that is the
+  failure mode this gate catches at creation time instead of at first use.
 - **Write it back.** Every guest you create, move, or retire goes
   into the registry and the estate's inventory in the same session
   (the docs-are-state loop; see `../docs/practice/doc-state.md`).
